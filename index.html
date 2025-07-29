@@ -45,6 +45,11 @@
       border-color: #0073e6;
       box-shadow: 0 0 5px rgba(0,115,230,0.5);
     }
+    .card-container {
+      max-width: 960px;
+      margin: auto;
+      padding: 1rem;
+    }
     #card-container {
       display: grid;
       grid-template-columns: repeat(1, 1fr);
@@ -61,10 +66,12 @@
       }
     }
     .card {
-      background: #fff;
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border: 1px solid #eee;
       border-radius: 12px;
+      background: #fff;
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      padding: 16px 20px 20px 20px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -82,66 +89,53 @@
       margin-bottom: 12px;
     }
     .card-header h2 {
-      font-size: 1.5rem;
-      font-weight: 800;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
       color: #2c3e50;
-      margin-bottom: 8px;
       line-height: 1.1;
     }
-    .badges-row {
+    .suburb {
+      font-size: 0.875rem;
+      color: #777;
+      display: flex;
+      align-items: center;
+      gap: 0.4em;
+      margin-bottom: 0.6em;
+      opacity: 0.85;
+    }
+    .meta-badges {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px 12px;
-      margin-bottom: 12px;
+      gap: 0.5em;
+      margin-bottom: 0.8em;
     }
     .badge {
-      background-color: #e1ecf9;
-      color: #0073e6;
-      font-weight: 600;
-      font-size: 13px;
+      display: inline-block;
       padding: 4px 10px;
-      border-radius: 9999px;
-      user-select: none;
+      border-radius: 999px;
+      font-size: 0.875rem;
+      margin-right: 0.5rem;
+      font-weight: 500;
       white-space: nowrap;
-      box-shadow: 0 1px 2px rgba(0,115,230,0.3);
     }
-    .days-row {
+    .badge.price { background-color: #e6f4ea; color: #2e7d32; }
+    .badge.duration { background-color: #e9f1fb; color: #1e40af; }
+    .badge.cuisine { background-color: #f5eee5; color: #5d3a00; }
+    .days-available {
       display: flex;
       gap: 6px;
-      margin-bottom: 12px;
-      user-select: none;
+      margin-top: 8px;
     }
     .day {
-      width: 24px;
-      height: 24px;
+      width: 12px;
+      height: 12px;
       border-radius: 50%;
-      font-size: 13px;
-      font-weight: 700;
-      line-height: 24px;
-      text-align: center;
-      color: #fff;
-      background-color: #bbb;
-      flex-shrink: 0;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      background-color: #ccc;
+      display: inline-block;
     }
-    .day.open {
-      background-color: #4caf50;
-      box-shadow: 0 1px 5px rgba(76,175,80,0.6);
-    }
-    .icon-links {
-      margin-top: auto;
-      display: flex;
-      gap: 16px;
-      justify-content: flex-start;
-    }
-    .icon-links a {
-      color: #0073e6;
-      font-size: 20px;
-      transition: color 0.2s ease;
-    }
-    .icon-links a:hover, .icon-links a:focus {
-      color: #004a99;
-      outline: none;
+    .day.active {
+      background-color: #8ccbbb;
     }
 
     /* Modal styles */
@@ -215,7 +209,9 @@
   <div id="search-container">
     <input type="text" id="search-input" placeholder="Search by suburb or name..." aria-label="Search venues by suburb or name" />
   </div>
-  <div id="card-container"></div>
+  <div class="card-container">
+    <div id="card-container"></div>
+  </div>
 
   <div id="detail-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
     <div class="modal-content" tabindex="0">
@@ -283,21 +279,41 @@
       return dayIndexes;
     }
 
-    // Create badge element
-    function createBadge(text) {
+    // Create badge element for meta info
+    function createMetaBadge(type, text, iconClass = null) {
       const span = document.createElement('span');
-      span.className = 'badge';
-      span.textContent = text;
+      span.className = 'badge ' + type;
+      if (iconClass) {
+        const icon = document.createElement('i');
+        icon.className = iconClass;
+        icon.style.marginRight = '0.3em';
+        span.appendChild(icon);
+      }
+      span.appendChild(document.createTextNode(text));
       return span;
     }
 
-    // Create day element
-    function createDayElement(letter, isOpen) {
-      const span = document.createElement('span');
-      span.className = 'day';
-      if (isOpen) span.classList.add('open');
-      span.textContent = letter;
-      return span;
+    // Create suburb element with icon
+    function createSuburb(suburb) {
+      const div = document.createElement('div');
+      div.className = 'suburb';
+      const icon = document.createElement('i');
+      icon.className = 'fas fa-map-marker-alt';
+      div.appendChild(icon);
+      div.appendChild(document.createTextNode(suburb));
+      return div;
+    }
+
+    // Create graphical days-of-week display
+    function createDaysAvailable(openDaysSet) {
+      const daysDiv = document.createElement('div');
+      daysDiv.className = 'days-available';
+      for (let i = 0; i < 7; i++) {
+        const dot = document.createElement('span');
+        dot.className = 'day' + (openDaysSet.has(i) ? ' active' : '');
+        daysDiv.appendChild(dot);
+      }
+      return daysDiv;
     }
 
     // Create icon link element
@@ -366,60 +382,40 @@
         header.appendChild(h2);
         card.appendChild(header);
 
-        // Suburb badge
-        const badgesRow = document.createElement('div');
-        badgesRow.className = 'badges-row';
-
+        // Suburb line with pin icon
         if (suburb) {
-          badgesRow.appendChild(createBadge(suburb));
+          card.appendChild(createSuburb(suburb));
         }
 
-        // Price badge
+        // Meta badges (price, duration, cuisine)
+        const metaBadges = document.createElement('div');
+        metaBadges.className = 'meta-badges';
+        let hasMeta = false;
         if (item['Price (AUD)']) {
-          badgesRow.appendChild(createBadge(`$${item['Price (AUD)']} per person`));
+          metaBadges.appendChild(createMetaBadge('price', `$${item['Price (AUD)']}`, 'fas fa-dollar-sign'));
+          hasMeta = true;
         } else if (item['Price']) {
-          badgesRow.appendChild(createBadge(item['Price']));
+          metaBadges.appendChild(createMetaBadge('price', item['Price'], 'fas fa-dollar-sign'));
+          hasMeta = true;
         }
-
-        // Cuisine badge
-        if (item['Cuisine']) {
-          badgesRow.appendChild(createBadge(item['Cuisine']));
-        }
-
-        // Duration badge
         if (item['Duration']) {
-          badgesRow.appendChild(createBadge(item['Duration']));
+          metaBadges.appendChild(createMetaBadge('duration', item['Duration'], 'fas fa-clock'));
+          hasMeta = true;
+        }
+        if (item['Cuisine']) {
+          metaBadges.appendChild(createMetaBadge('cuisine', item['Cuisine']));
+          hasMeta = true;
+        }
+        if (hasMeta) {
+          card.appendChild(metaBadges);
         }
 
-        if (badgesRow.childElementCount > 0) {
-          card.appendChild(badgesRow);
-        }
-
-        // Days row (weekday initials with green/grey)
+        // Days-of-week display (graphical dots)
         const daysField = ['Days', 'Days Open', 'Open Days', 'Days Available'].find(f => item[f]);
         if (daysField) {
           const daysStr = item[daysField];
           const openDays = parseDays(daysStr);
-          const daysRow = document.createElement('div');
-          daysRow.className = 'days-row';
-          WEEKDAYS.forEach((letter, idx) => {
-            daysRow.appendChild(createDayElement(letter, openDays.has(idx)));
-          });
-          card.appendChild(daysRow);
-        }
-
-        // Icon links row
-        const iconLinks = document.createElement('div');
-        iconLinks.className = 'icon-links';
-        const websiteLink = createIconLink(item['Website URL'], 'fas fa-globe', 'Website');
-        const instagramLink = createIconLink(item['Instagram URL'], 'fab fa-instagram', 'Instagram');
-        const mapLink = createIconLink(item['Map URL'], 'fas fa-map-marker-alt', 'Map');
-
-        [websiteLink, instagramLink, mapLink].forEach(link => {
-          if (link) iconLinks.appendChild(link);
-        });
-        if (iconLinks.childElementCount > 0) {
-          card.appendChild(iconLinks);
+          card.appendChild(createDaysAvailable(openDays));
         }
 
         // Click and keyboard event to open modal with full info
