@@ -12,11 +12,11 @@
       padding: 0;
     }
     body {
-      font-family: 'Inter', Arial, sans-serif;
+      font-family: Arial, sans-serif;
       line-height: 1.5;
       background: #fafafa;
       color: #333;
-      padding: 8px;
+      padding: 20px;
     }
     h1 {
       text-align: center;
@@ -37,19 +37,14 @@
     }
     #card-container {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 16px;
-    }
-    @media (min-width: 700px) {
-      #card-container {
-        grid-template-columns: repeat(3, 1fr);
-      }
     }
     .card {
       background: #fff;
-      border-radius: 14px;
-      box-shadow: 0 2px 8px #0001;
-      padding: 18px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 16px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -61,74 +56,25 @@
     }
     .card h2 {
       font-size: 20px;
-      margin-bottom: 4px;
+      margin-bottom: 8px;
       color: #2c3e50;
-      font-weight: 700;
     }
-    .suburb {
-      font-size: 12px;
-      color: #888;
-      margin-bottom: 3px;
+    .card p {
+      margin-bottom: 4px;
+      font-size: 14px;
     }
-    .badge {
+    .card .links a {
       display: inline-block;
-      font-size: 12px;
-      padding: 2px 10px;
-      border-radius: 999px;
-      margin-right: 6px;
-    }
-    .badge.price {
-      background: #E8F5E9;
-      color: #2E7D32;
-    }
-    .badge.cuisine {
-      background: #FFF3E0;
-      color: #8D6E63;
-    }
-    .badge.duration {
-      background: #E3F2FD;
-      color: #1565C0;
-    }
-    .days-row {
-      display: flex;
-      gap: 4px;
-      margin: 8px 0 10px 0;
-    }
-    .day {
-      font-size: 12px;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      text-align: center;
-      line-height: 22px;
-      font-weight: 500;
-    }
-    .day.open {
-      color: #fff;
-      background: #43A047;
-    }
-    .day.closed {
-      color: #BDBDBD;
-      background: #F3F3F3;
-    }
-    .icon-links {
-      margin-top: 7px;
-    }
-    .icon-links a {
-      color: #555;
-      margin-right: 16px;
-      font-size: 16px;
-      vertical-align: middle;
+      margin-right: 8px;
+      margin-top: 8px;
       text-decoration: none;
+      color: #0073e6;
+      font-size: 14px;
     }
-    .icon-links a:last-child {
-      margin-right: 0;
-    }
-    .icon-links a:hover {
-      color: #2196F3;
+    .card .links a:hover {
+      text-decoration: underline;
     }
   </style>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" crossorigin="anonymous">
 </head>
 <body>
   <h1>Bottomless Brunch Sydney</h1>
@@ -183,57 +129,29 @@
       container.innerHTML = '';
       const lowerFilter = filterText.toLowerCase();
       data.forEach(item => {
-        const name = item['Name'] || '';
-        const suburb = item['Suburb'] || '';
+        const name = item['Name'];
+        const suburb = item['Suburb'];
+        const price = item['Price (AUD)'];
+        const cuisine = item['Cuisine'];
+        const website = item['Website URL'];
+        const instagram = item['Instagram URL'];
         // filter by name or suburb
         if (lowerFilter && !name.toLowerCase().includes(lowerFilter) && !suburb.toLowerCase().includes(lowerFilter)) {
           return;
         }
-        const price = item['Price (AUD)'] || '';
-        const cuisine = item['Cuisine'] || '';
-        const duration = item['Duration'] || '';
-        const website = item['Website URL'] || '';
-        const instagram = item['Instagram URL'] || '';
-
-        // Weekday columns mapping
-        const weekdays = ['M', 'T', 'W', 'Th', 'F', 'Sa', 'Su'];
-        const daysStatus = weekdays.map(day => {
-          const val = item[day];
-          return val && val.toLowerCase() === 'yes' ? 'open' : 'closed';
-        });
-
         const card = document.createElement('div');
         card.className = 'card';
-
-        // Build badges html if present
-        const badges = [];
-        if (price) badges.push(`<span class="badge price">$${price}</span>`);
-        if (cuisine) badges.push(`<span class="badge cuisine">${cuisine}</span>`);
-        if (duration) badges.push(`<span class="badge duration">${duration}</span>`);
-
-        // Build days html
-        const daysHtml = daysStatus.map((status, idx) => {
-          const dayLetter = weekdays[idx];
-          return `<div class="day ${status}">${dayLetter}</div>`;
-        }).join('');
-
-        // Build icon links html only if URLs present
-        const iconLinks = [];
-        if (website && website.trim() !== '') {
-          iconLinks.push(`<a href="${website}" target="_blank" rel="noopener noreferrer" aria-label="Website"><i class="fa-solid fa-globe"></i></a>`);
-        }
-        if (instagram && instagram.trim() !== '') {
-          iconLinks.push(`<a href="${instagram}" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>`);
-        }
-
         card.innerHTML = `
           <div>
             <h2>${name}</h2>
-            <div class="suburb">${suburb}</div>
-            <div>${badges.join('')}</div>
-            <div class="days-row">${daysHtml}</div>
+            <p><strong>Suburb:</strong> ${suburb}</p>
+            <p><strong>Price:</strong> $${price} per person</p>
+            <p><strong>Cuisine:</strong> ${cuisine}</p>
           </div>
-          <div class="icon-links">${iconLinks.join('')}</div>
+          <div class="links">
+            <a href="${website}" target="_blank" rel="noopener noreferrer">Website</a>
+            <a href="${instagram}" target="_blank" rel="noopener noreferrer">Instagram</a>
+          </div>
         `;
         container.appendChild(card);
       });
