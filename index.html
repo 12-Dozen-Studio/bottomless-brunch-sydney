@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bottomless Brunch Sydney</title>
+  <style>
+    /* Simple reset */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.5;
+      background: #fafafa;
+      color: #333;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    #search-container {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    #search-input {
+      width: 100%;
+      max-width: 400px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    #card-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.1s ease-in-out;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    .card h2 {
+      font-size: 20px;
+      margin-bottom: 8px;
+      color: #2c3e50;
+    }
+    .card p {
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+    .card .links a {
+      display: inline-block;
+      margin-right: 8px;
+      margin-top: 8px;
+      text-decoration: none;
+      color: #0073e6;
+      font-size: 14px;
+    }
+    .card .links a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <h1>Bottomless Brunch Sydney</h1>
+  <div id="search-container">
+    <input type="text" id="search-input" placeholder="Search by suburb or name...">
+  </div>
+  <div id="card-container"></div>
+
+  <script>
+    // Fetch and parse the CSV file then render cards
+    async function loadCSV() {
+      try {
+        const response = await fetch('bottomless_brunch_sydney.csv');
+        if (!response.ok) {
+          throw new Error('CSV file not found');
+        }
+        const csvText = await response.text();
+        const rows = csvText.trim().split(/\r?\n/);
+        const headers = rows.shift().split(',');
+        const data = rows.map(line => {
+          const values = [];
+          let current = '';
+          let insideQuotes = false;
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+              insideQuotes = !insideQuotes;
+            } else if (char === ',' && !insideQuotes) {
+              values.push(current);
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+          values.push(current);
+          const obj = {};
+          headers.forEach((h, idx) => {
+            obj[h] = values[idx];
+          });
+          return obj;
+        });
+        return data;
+      } catch (err) {
+        console.error(err);
+        return [];
+      }
+    }
+
+    // Render cards based on data and search
+    function renderCards(data, filterText = '') {
+      const container = document.getElementById('card-container');
+      container.innerHTML = '';
+      const lowerFilter = filterText.toLowerCase();
+      data.forEach(item => {
+        const name = item['Name'];
+        const suburb = item['Suburb'];
+        const price = item['Price (AUD)'];
+        const cuisine = item['Cuisine'];
+        const website = item['Website URL'];
+        const instagram = item['Instagram URL'];
+        // filter by name or suburb
+        if (lowerFilter && !name.toLowerCase().includes(lowerFilter) && !suburb.toLowerCase().includes(lowerFilter)) {
+          return;
+        }
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div>
+            <h2>${name}</h2>
+            <p><strong>Suburb:</strong> ${suburb}</p>
+            <p><strong>Price:</strong> $${price} per person</p>
+            <p><strong>Cuisine:</strong> ${cuisine}</p>
+          </div>
+          <div class="links">
+            <a href="${website}" target="_blank" rel="noopener noreferrer">Website</a>
+            <a href="${instagram}" target="_blank" rel="noopener noreferrer">Instagram</a>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Initialize
+    loadCSV().then(data => {
+      let allData = data;
+      renderCards(allData);
+      const searchInput = document.getElementById('search-input');
+      searchInput.addEventListener('input', () => {
+        renderCards(allData, searchInput.value);
+      });
+    });
+  </script>
+</body>
+</html>
