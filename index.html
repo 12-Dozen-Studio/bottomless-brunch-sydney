@@ -37,15 +37,15 @@
       justify-content: space-between;
       align-items: center;
     }
-    .card-content {
+    .card-text {
       flex: 1;
     }
-    .card img {
+    .card-img {
       width: 100px;
-      height: 80px;
+      height: 70px;
       object-fit: cover;
-      border-radius: 4px;
       margin-left: 10px;
+      border-radius: 4px;
     }
     .modal {
       display: none;
@@ -63,14 +63,13 @@
       background: white;
       padding: 20px;
       border-radius: 8px;
-      max-width: 400px;
+      max-width: 500px;
       width: 90%;
     }
-    #lastUpdated {
-      text-align: center;
-      font-size: 12px;
-      color: #666;
-      margin: 10px 0;
+    #modalMap {
+      height: 200px;
+      margin-top: 10px;
+      border-radius: 4px;
     }
   </style>
 </head>
@@ -93,8 +92,6 @@
     <div class="modal-content" id="modalContent"></div>
   </div>
 
-  <div id="lastUpdated"></div>
-
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
     let map;
@@ -113,9 +110,6 @@
 
       document.getElementById("dayFilter").addEventListener("change", render);
       document.getElementById("areaFilter").addEventListener("change", render);
-
-      const lastUpdated = new Date(document.lastModified);
-      document.getElementById("lastUpdated").textContent = 'Page last updated: ' + lastUpdated.toLocaleString();
     }
 
     function populateAreaFilter() {
@@ -143,15 +137,18 @@
       filtered.forEach(v => {
         const div = document.createElement("div");
         div.className = "card";
-        div.innerHTML = `
-          <div class="card-content">
+        div.onclick = () => showModal(v);
+
+        const content = `
+          <div class="card-text">
             <strong>${v.name}</strong><br>
             ${v.suburb} | $${v.price}<br>
-            ${v.cuisine}
+            ${v.cuisine || ""}
           </div>
-          <img src="${v.image || 'https://via.placeholder.com/100x80?text=No+Image'}" alt="${v.name}" />
+          <img class="card-img" src="${v.image || 'https://via.placeholder.com/100x70?text=No+Image'}" alt="${v.name}" />
         `;
-        div.onclick = () => showModal(v);
+
+        div.innerHTML = content;
         list.appendChild(div);
 
         const marker = L.marker([v.lat, v.lng]).addTo(map)
@@ -167,8 +164,8 @@
         <img src="${v.image || 'https://via.placeholder.com/400x200?text=No+Image'}" alt="${v.name}" style="width:100%; height:auto; border-radius:6px;" />
         <h3>${v.name}</h3>
         <p><strong>Suburb:</strong> ${v.suburb}</p>
-        <p><strong>Days:</strong> ${v.days?.join(", ") || "N/A"}</p>
-        <p><strong>Sessions:</strong> ${v.sessions?.join(", ") || "N/A"}</p>
+        <p><strong>Days:</strong> ${v.days.join(', ')}</p>
+        <p><strong>Sessions:</strong> ${v.sessions.join(', ')}</p>
         <p><strong>Price:</strong> $${v.price}</p>
         <p><strong>Duration:</strong> ${v.duration} mins</p>
         <p><strong>Cuisine:</strong> ${v.cuisine}</p>
@@ -176,16 +173,17 @@
         ${v.website ? `<p><a href="${v.website}" target="_blank">Website</a></p>` : ""}
         ${v.instagram ? `<p><a href="${v.instagram}" target="_blank">Instagram</a></p>` : ""}
         ${v.googleMapsUrl ? `<p><a href="${v.googleMapsUrl}" target="_blank">Get Directions</a></p>` : ""}
-        <div id="modalMap" style="height: 200px; margin-top: 10px;"></div>
+        <div id="modalMap"></div>
         <button onclick="hideModal()">Close</button>
       `;
-      modal.style.display = "flex";
 
       setTimeout(() => {
         const modalMap = L.map('modalMap').setView([v.lat, v.lng], 15);
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(modalMap);
         L.marker([v.lat, v.lng]).addTo(modalMap);
       }, 0);
+
+      modal.style.display = "flex";
     }
 
     function hideModal() {
