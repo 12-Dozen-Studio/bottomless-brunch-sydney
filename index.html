@@ -11,8 +11,12 @@
       font-family: Arial, sans-serif;
     }
     #map {
-      height: 300px;
+      height: 150px;
       width: 100%;
+      transition: height 0.3s ease;
+    }
+    .map-expanded {
+      height: 300px !important;
     }
     .filters {
       padding: 10px;
@@ -35,17 +39,11 @@
       cursor: pointer;
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: stretch;
+      height: 100px;
     }
-    .card-text {
+    .card-info {
       flex: 1;
-    }
-    .card-img {
-      width: 100px;
-      height: 70px;
-      object-fit: cover;
-      margin-left: 10px;
-      border-radius: 4px;
     }
     .modal {
       display: none;
@@ -66,14 +64,33 @@
       max-width: 500px;
       width: 90%;
     }
-    #modalMap {
+    .modal-map {
       height: 200px;
       margin-top: 10px;
-      border-radius: 4px;
+    }
+    .timestamp {
+      text-align: center;
+      font-size: 0.8em;
+      color: #666;
+      padding: 10px;
+    }
+    .image-box {
+      width: auto;
+      height: 100%;
+      aspect-ratio: 4 / 3;
+      border-radius: 6px;
+      background-color: #ddd;
+      background-size: cover;
+      background-position: center;
+      margin-left: 10px;
+      flex-shrink: 0;
     }
   </style>
 </head>
 <body>
+  <div class="timestamp">
+    Page last updated: <span id="lastModified"></span>
+  </div>
   <div class="filters">
     <select id="dayFilter" class="filter">
       <option value="all">All Days</option>
@@ -90,13 +107,17 @@
 
   <div class="modal" id="modal">
     <div class="modal-content" id="modalContent"></div>
+    <div id="modalMap" class="modal-map"></div>
   </div>
+
+  
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
     let map;
     let markers = [];
     let venues = [];
+    let modalMap;
 
     async function init() {
       const res = await fetch("brunch_sample_10.json");
@@ -105,11 +126,28 @@
       map = L.map("map").setView([-33.87, 151.21], 12);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
+      // Map expand/collapse functionality
+      const mapContainer = document.getElementById("map");
+      mapContainer.addEventListener("click", () => {
+        mapContainer.classList.toggle("map-expanded");
+        map.invalidateSize();
+      });
+
+      window.addEventListener("scroll", () => {
+        if (window.scrollY > 100 && mapContainer.classList.contains("map-expanded")) {
+          mapContainer.classList.remove("map-expanded");
+          map.invalidateSize();
+        }
+      });
+
       populateAreaFilter();
       render();
 
       document.getElementById("dayFilter").addEventListener("change", render);
       document.getElementById("areaFilter").addEventListener("change", render);
+
+      const lastModified = new Date(document.lastModified);
+      document.getElementById("lastModified").textContent = formatDateTime(lastModified);
     }
 
     function populateAreaFilter() {
@@ -137,21 +175,21 @@
       filtered.forEach(v => {
         const div = document.createElement("div");
         div.className = "card";
-        div.onclick = () => showModal(v);
-
-        const content = `
-          <div class="card-text">
+        div.innerHTML = `
+          <div class="card-info">
             <strong>${v.name}</strong><br>
             ${v.suburb} | $${v.price}<br>
+            ${v.days?.join(", ") || ""}<br>
             ${v.cuisine || ""}
           </div>
-          <img class="card-img" src="${v.image || 'https://via.placeholder.com/100x70?text=No+Image'}" alt="${v.name}" />
+          <div class="image-box" style="background-image: url('${v.image || ""}');"></div>
         `;
-
-        div.innerHTML = content;
+        div.onclick = () => showModal(v);
         list.appendChild(div);
 
-        const marker = L.marker([v.lat, v.lng]).addTo(map)
+        const lat = v.lat !== undefined ? v.lat : (-33.87 + Math.random() * 0.05);
+        const lng = v.lng !== undefined ? v.lng : (151.21 + Math.random() * 0.05);
+        const marker = L.marker([lat, lng]).addTo(map)
           .on('click', () => showModal(v));
         markers.push(marker);
       });
@@ -160,34 +198,45 @@
     function showModal(v) {
       const modal = document.getElementById("modal");
       const content = document.getElementById("modalContent");
+      const mapsUrl = v.lat && v.lng
+        ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(v.name + ', ' + v.address)}`
+        : null;
+
       content.innerHTML = `
-        <img src="${v.image || 'https://via.placeholder.com/400x200?text=No+Image'}" alt="${v.name}" style="width:100%; height:auto; border-radius:6px;" />
+        <div class="image-box" style="width: calc(100% - 40px); height: 200px; background-image: url('${v.image || ""}'); background-size: cover; background-position: center; margin: 0 auto 10px auto;"></div>
         <h3>${v.name}</h3>
         <p><strong>Suburb:</strong> ${v.suburb}</p>
-        <p><strong>Days:</strong> ${v.days.join(', ')}</p>
-        <p><strong>Sessions:</strong> ${v.sessions.join(', ')}</p>
+        <p><strong>Days:</strong> ${v.days.join(", ")}</p>
+        <p><strong>Sessions:</strong> ${v.sessions.join(", ")}</p>
         <p><strong>Price:</strong> $${v.price}</p>
         <p><strong>Duration:</strong> ${v.duration} mins</p>
         <p><strong>Cuisine:</strong> ${v.cuisine}</p>
         <p><strong>Description:</strong> ${v.description}</p>
-        ${v.website ? `<p><a href="${v.website}" target="_blank">Website</a></p>` : ""}
+        <p><a href="${v.website}" target="_blank">Website</a></p>
         ${v.instagram ? `<p><a href="${v.instagram}" target="_blank">Instagram</a></p>` : ""}
-        ${v.googleMapsUrl ? `<p><a href="${v.googleMapsUrl}" target="_blank">Get Directions</a></p>` : ""}
-        <div id="modalMap"></div>
+        ${mapsUrl ? `<p><a href="${mapsUrl}" target="_blank">Get Directions</a></p>` : ""}
         <button onclick="hideModal()">Close</button>
       `;
 
-      setTimeout(() => {
-        const modalMap = L.map('modalMap').setView([v.lat, v.lng], 15);
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(modalMap);
-        L.marker([v.lat, v.lng]).addTo(modalMap);
-      }, 0);
+      if (modalMap) {
+        modalMap.remove();
+      }
+      const lat = v.lat !== undefined ? v.lat : (-33.87 + Math.random() * 0.05);
+      const lng = v.lng !== undefined ? v.lng : (151.21 + Math.random() * 0.05);
+      modalMap = L.map("modalMap").setView([lat, lng], 14);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(modalMap);
+      L.marker([lat, lng]).addTo(modalMap);
 
       modal.style.display = "flex";
     }
 
     function hideModal() {
       document.getElementById("modal").style.display = "none";
+    }
+
+    function formatDateTime(date) {
+      const pad = (n) => n.toString().padStart(2, '0');
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
     }
 
     init();

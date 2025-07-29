@@ -1,12 +1,16 @@
 [
   {
-    "name": "Joji Social Saturdays",
+    "name": "Joji",
     "address": "Level 5, 388 George Street, Sydney NSW 2000",
     "suburb": "Sydney CBD",
+    "lat": -33.8675,
+    "lng": 151.207,
     "days": [
       "Saturday"
     ],
-    "sessions": [],
+    "sessions": [
+      "12:00 PM"
+    ],
     "price": 130,
     "duration": 90,
     "cuisine": "Japanese",
@@ -16,9 +20,11 @@
     "imageUrl": ""
   },
   {
-    "name": "Matteo Downtown Bottomless Lunch",
+    "name": "Matteo Downtown",
     "address": "20 Bond Street, Sydney NSW 2000",
     "suburb": "Sydney CBD",
+    "lat": -33.8675,
+    "lng": 151.207,
     "days": [
       "Saturday"
     ],
@@ -27,7 +33,7 @@
       "4:30 PM"
     ],
     "price": 99,
-    "duration": 2,
+    "duration": 120,
     "cuisine": "Italian",
     "description": "Three\u2011course Italian feast; alcohol\u2011free option ($89) Includes: Spritz on arrival, cocktails, wine",
     "website": "https://www.matteosydney.com/whats-on/bottomless-lunch/",
@@ -35,9 +41,11 @@
     "imageUrl": ""
   },
   {
-    "name": "Mille Vini Limoncello Spritz Lunch",
+    "name": "Mille Vini",
     "address": "397 Crown Street, Surry Hills NSW 2010",
     "suburb": "Surry Hills",
+    "lat": -33.884,
+    "lng": 151.215,
     "days": [
       "Saturday",
       "Sunday"
@@ -55,9 +63,11 @@
     "imageUrl": ""
   },
   {
-    "name": "Tucano\u2019s Disco Brunch",
+    "name": "Tucano\u2019s",
     "address": "277 Goulburn Street, Surry Hills NSW 2010",
     "suburb": "Surry Hills",
+    "lat": -33.884,
+    "lng": 151.215,
     "days": [
       "Saturday"
     ],
@@ -66,7 +76,7 @@
       "4:00 PM"
     ],
     "price": 95,
-    "duration": 2,
+    "duration": 120,
     "cuisine": "Italian/Brazilian",
     "description": "Disco brunch with shared plates; includes spritzes, wine and beer Includes: Gin spritzes, wine, tap beer",
     "website": "https://tucanos.com.au/disco-brunch/",
@@ -74,9 +84,11 @@
     "imageUrl": ""
   },
   {
-    "name": "Rosie Campbell\u2019s Bottomless Daiquiri Lunch",
+    "name": "Rosie Campbell\u2019s",
     "address": "320 Crown Street, Surry Hills NSW 2010",
     "suburb": "Surry Hills",
+    "lat": -33.884,
+    "lng": 151.215,
     "days": [
       "Friday",
       "Sunday"
@@ -94,9 +106,11 @@
     "imageUrl": ""
   },
   {
-    "name": "The Winery Bellini Disco Brunch",
+    "name": "The Winery",
     "address": "285a Crown Street, Surry Hills NSW 2010",
     "suburb": "Surry Hills",
+    "lat": -33.884,
+    "lng": 151.215,
     "days": [
       "Saturday"
     ],
@@ -106,7 +120,7 @@
       "3:00 PM"
     ],
     "price": 99,
-    "duration": 2,
+    "duration": 120,
     "cuisine": "Modern Australian",
     "description": "Disco\u2011themed brunch with bottomless Bellinis; set menu Includes: Bellinis and spritzes",
     "website": "https://thewinerysurryhills.com.au/bellini-disco-brunch/",
@@ -114,9 +128,11 @@
     "imageUrl": ""
   },
   {
-    "name": "The Winery Sip & Slay Drag Brunch",
+    "name": "The Winery",
     "address": "285a Crown Street, Surry Hills NSW 2010",
     "suburb": "Surry Hills",
+    "lat": -33.884,
+    "lng": 151.215,
     "days": [
       "Sunday"
     ],
@@ -124,7 +140,7 @@
       "12:30 PM"
     ],
     "price": 99,
-    "duration": 2,
+    "duration": 120,
     "cuisine": "Modern Australian",
     "description": "Drag\u2011hosted brunch with a two\u2011course menu Includes: Spritzes",
     "website": "https://thewinerysurryhills.com.au/sip-and-slay-drag-brunch/",
@@ -132,9 +148,11 @@
     "imageUrl": ""
   },
   {
-    "name": "Rocker Bondi Bottomless Brunch",
+    "name": "Rocker Bondi",
     "address": "Shop 5, 39\u201353 Campbell Parade, North Bondi NSW 2026",
     "suburb": "North Bondi",
+    "lat": -33.8876,
+    "lng": 151.283,
     "days": [
       "Thursday",
       "Sunday"
@@ -152,9 +170,11 @@
     "imageUrl": ""
   },
   {
-    "name": "Watsons Bay Boutique Hotel Bottomless Brunch",
+    "name": "Watsons Bay Boutique Hotel",
     "address": "10 Marine Parade, Watsons Bay NSW 2030",
     "suburb": "Watsons Bay",
+    "lat": -33.8416,
+    "lng": 151.2824,
     "days": [
       "Saturday"
     ],
@@ -162,7 +182,7 @@
       "12:00 PM"
     ],
     "price": 99,
-    "duration": 2,
+    "duration": 120,
     "cuisine": "Italian\u2011inspired",
     "description": "Two\u2011course share menu; upgrade with spritz cocktails ($119) Includes: Rameau d'Or Ros\u00e9, house wine, beer (spritz upgrade available)",
     "website": "https://watsonsbayhotel.com.au/bottomless-brunch/",
@@ -170,16 +190,20 @@
     "imageUrl": ""
   },
   {
-    "name": "Forrester\u2019s Bottomless Lunch",
+    "name": "Forrester\u2019s",
     "address": "336 Riley Street, Surry Hills NSW 2010",
     "suburb": "Surry Hills",
-    "days": [],
+    "lat": -33.884,
+    "lng": 151.215,
+    "days": [
+      "Saturday"
+    ],
     "sessions": [
       "12:00 PM",
       "3:00 PM"
     ],
     "price": 89,
-    "duration": 2,
+    "duration": 120,
     "cuisine": "Pub/Modern Australian",
     "description": "Hosted in Phylli\u2019s garden; minimum four guests; includes shared feast Includes: House wines, beers, cider (spritz upgrade +$10)",
     "website": "https://forresters.com.au/bottomless-lunch/",
