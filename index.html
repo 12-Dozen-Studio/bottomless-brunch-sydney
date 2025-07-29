@@ -3,169 +3,421 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bottomless Brunch Sydney</title>
+  <title>Sydney Bottomless Brunch</title>
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-zN6AWkjA/Y/PbCFq4G1zxBezXG6H4iEHygLvpFSvAoVNdxicHWxTbuGah7dO19Ck3JSpWgDQNXd5wFXtZH/Mlw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <!-- PapaParse for CSV parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js" integrity="sha512-hNiU8HKqAzzmLJWcP4JU3G977mJr3mN2k3cNQDWt0EQw6bZzMXt8SMlW3rvj6mIN89nEZ9wKZ7YiWxs19EjTtA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <style>
-    /* Simple reset */
+    :root {
+      --color-bg: #f7f5f2;
+      --color-card-border: #e8e1d9;
+      --color-card-shadow: rgba(0, 0, 0, 0.03);
+      --color-primary: #1f2937;
+      --color-secondary: #6b7280;
+      --color-green-bg: #e6f4ea;
+      --color-green-text: #0f7c3d;
+      --color-blue-bg: #e8eff8;
+      --color-blue-text: #145a95;
+      --color-beige-bg: #f7f1e6;
+      --color-beige-text: #8b5a32;
+      --color-day-inactive-bg: #eeeeee;
+      --color-day-active-bg: #3fb866;
+    }
     * {
       box-sizing: border-box;
-      margin: 0;
-      padding: 0;
     }
     body {
-      font-family: Arial, sans-serif;
-      line-height: 1.5;
-      background: #fafafa;
-      color: #333;
-      padding: 20px;
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--color-bg);
+      color: var(--color-primary);
+      -webkit-font-smoothing: antialiased;
     }
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 16px 64px;
     }
-    #search-container {
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    header p {
+      font-size: 0.9rem;
+      color: var(--color-secondary);
+      margin-bottom: 8px;
+    }
+    #spot-count {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--color-secondary);
+      margin-bottom: 16px;
+    }
+    .filters {
       display: flex;
-      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
       margin-bottom: 20px;
     }
-    #search-input {
-      width: 100%;
-      max-width: 400px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 16px;
+    .filters input[type="text"], .filters select {
+      padding: 10px 12px;
+      font-size: 0.9rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      background: #fff;
+      color: var(--color-primary);
+      flex: 1;
+      min-width: 160px;
     }
-    #card-container {
+    .filters select {
+      max-width: 180px;
+      flex: initial;
+    }
+    .card-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 16px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 600px) {
+      .card-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (min-width: 900px) {
+      .card-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
     }
     .card {
       background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      border: 1px solid var(--color-card-border);
+      border-radius: 12px;
       padding: 16px;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      transition: transform 0.1s ease-in-out;
+      box-shadow: 0 1px 3px var(--color-card-shadow);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
     .card:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.06);
     }
-    .card h2 {
-      font-size: 20px;
+    .card .name {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .card .suburb {
+      font-size: 0.85rem;
+      color: var(--color-secondary);
+      display: flex;
+      align-items: center;
+      gap: 4px;
       margin-bottom: 8px;
-      color: #2c3e50;
     }
-    .card p {
-      margin-bottom: 4px;
-      font-size: 14px;
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
     }
-    .card .links a {
-      display: inline-block;
-      margin-right: 8px;
-      margin-top: 8px;
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 4px 8px;
+      border-radius: 999px;
+    }
+    .badge.price {
+      background: var(--color-green-bg);
+      color: var(--color-green-text);
+    }
+    .badge.duration {
+      background: var(--color-blue-bg);
+      color: var(--color-blue-text);
+    }
+    .badge.cuisine {
+      background: var(--color-beige-bg);
+      color: var(--color-beige-text);
+    }
+    .schedule {
+      font-size: 0.8rem;
+      color: var(--color-secondary);
+      margin-bottom: 8px;
+    }
+    .days-row {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+    .day {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      font-weight: 500;
+      color: #555;
+      background: var(--color-day-inactive-bg);
+    }
+    .day.active {
+      background: var(--color-day-active-bg);
+      color: #fff;
+    }
+    .links {
+      display: flex;
+      gap: 16px;
+      margin-top: auto;
+      font-size: 1.1rem;
+    }
+    .links a {
+      color: var(--color-secondary);
       text-decoration: none;
-      color: #0073e6;
-      font-size: 14px;
+      transition: color 0.15s ease;
     }
-    .card .links a:hover {
-      text-decoration: underline;
+    .links a:hover {
+      color: var(--color-primary);
     }
   </style>
 </head>
 <body>
-  <h1>Bottomless Brunch Sydney</h1>
-  <div id="search-container">
-    <input type="text" id="search-input" placeholder="Search by suburb or name...">
+  <div class="container">
+    <header>
+      <h1>Sydney Bottomless Brunch</h1>
+      <p>Discover the best bottomless brunch spots across Sydney</p>
+      <span id="spot-count"></span>
+    </header>
+    <div class="filters">
+      <input type="text" id="search-input" placeholder="Search by name or suburb…" />
+      <select id="filter-suburb">
+        <option value="">All Suburbs</option>
+      </select>
+      <select id="filter-cuisine">
+        <option value="">All Cuisines</option>
+      </select>
+    </div>
+    <div class="card-grid" id="card-grid"></div>
   </div>
-  <div id="card-container"></div>
-
   <script>
-    // Fetch and parse the CSV file then render cards
-    async function loadCSV() {
-      try {
-        const response = await fetch('bottomless_brunch_sydney.csv');
-        if (!response.ok) {
-          throw new Error('CSV file not found');
+    // Helper to create DOM elements easily
+    function createDayElements(daysAvailable) {
+      const dayNames = ['M','T','W','T','F','S','S'];
+      const fullNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+      const fragment = document.createDocumentFragment();
+      for (let i = 0; i < dayNames.length; i++) {
+        const span = document.createElement('span');
+        span.classList.add('day');
+        if (daysAvailable.has(fullNames[i].toLowerCase())) {
+          span.classList.add('active');
         }
-        const csvText = await response.text();
-        const rows = csvText.trim().split(/\r?\n/);
-        const headers = rows.shift().split(',');
-        const data = rows.map(line => {
-          const values = [];
-          let current = '';
-          let insideQuotes = false;
-          for (let i = 0; i < line.length; i++) {
-            const char = line[i];
-            if (char === '"') {
-              insideQuotes = !insideQuotes;
-            } else if (char === ',' && !insideQuotes) {
-              values.push(current);
-              current = '';
-            } else {
-              current += char;
+        span.textContent = dayNames[i];
+        fragment.appendChild(span);
+      }
+      return fragment;
+    }
+
+    function parseDays(daysStr) {
+      const result = new Set();
+      if (!daysStr) return result;
+      const lower = daysStr.toLowerCase();
+      const allDays = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+      if (lower.includes('daily') || lower.includes('everyday') || lower.includes('mon-sun') || lower.includes('mon – sun') || lower.includes('seven days')) {
+        allDays.forEach(d => result.add(d));
+        return result;
+      }
+      // Expand ranges like Mon–Thu
+      // Replace unicode long dash with hyphen for splitting
+      let cleaned = lower.replace(/–/g, '-');
+      // Replace ampersands with commas
+      cleaned = cleaned.replace(/ & /g, ',').replace(/ and /g, ',');
+      const tokens = cleaned.split(/[,/]/);
+      for (const token of tokens) {
+        const part = token.trim();
+        if (!part) continue;
+        // Range like fri-sun or mon-thu
+        if (part.includes('-')) {
+          const [start, end] = part.split('-').map(s => s.trim());
+          const startIndex = allDays.findIndex(d => d.startsWith(start));
+          const endIndex = allDays.findIndex(d => d.startsWith(end));
+          if (startIndex !== -1 && endIndex !== -1) {
+            for (let i = startIndex; ; i = (i+1)%7) {
+              result.add(allDays[i]);
+              if (i === endIndex) break;
             }
           }
-          values.push(current);
-          const obj = {};
-          headers.forEach((h, idx) => {
-            obj[h] = values[idx];
-          });
-          return obj;
-        });
-        return data;
-      } catch (err) {
-        console.error(err);
-        return [];
+        } else {
+          // Single day like sat or sunday
+          const idx = allDays.findIndex(d => d.startsWith(part));
+          if (idx !== -1) result.add(allDays[idx]);
+        }
+      }
+      return result;
+    }
+
+    async function loadData() {
+      const response = await fetch('bottomless_brunch_sydney.csv');
+      if (!response.ok) throw new Error('Failed to fetch CSV');
+      const csvText = await response.text();
+      const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+      return parsed.data;
+    }
+
+    function populateSelect(select, options) {
+      const sorted = Array.from(options).sort((a,b) => a.localeCompare(b));
+      for (const val of sorted) {
+        const option = document.createElement('option');
+        option.value = val;
+        option.textContent = val;
+        select.appendChild(option);
       }
     }
 
-    // Render cards based on data and search
-    function renderCards(data, filterText = '') {
-      const container = document.getElementById('card-container');
-      container.innerHTML = '';
-      const lowerFilter = filterText.toLowerCase();
-      data.forEach(item => {
-        const name = item['Name'];
-        const suburb = item['Suburb'];
-        const price = item['Price (AUD)'];
-        const cuisine = item['Cuisine'];
-        const website = item['Website URL'];
-        const instagram = item['Instagram URL'];
-        // filter by name or suburb
-        if (lowerFilter && !name.toLowerCase().includes(lowerFilter) && !suburb.toLowerCase().includes(lowerFilter)) {
-          return;
-        }
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-          <div>
-            <h2>${name}</h2>
-            <p><strong>Suburb:</strong> ${suburb}</p>
-            <p><strong>Price:</strong> $${price} per person</p>
-            <p><strong>Cuisine:</strong> ${cuisine}</p>
-          </div>
-          <div class="links">
-            <a href="${website}" target="_blank" rel="noopener noreferrer">Website</a>
-            <a href="${instagram}" target="_blank" rel="noopener noreferrer">Instagram</a>
-          </div>
-        `;
-        container.appendChild(card);
-      });
+    function createCard(item) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      // Name and suburb
+      const nameEl = document.createElement('div');
+      nameEl.className = 'name';
+      nameEl.textContent = item['Name'];
+      const suburbEl = document.createElement('div');
+      suburbEl.className = 'suburb';
+      // location icon
+      const locIcon = document.createElement('i');
+      locIcon.className = 'fa-solid fa-location-dot';
+      suburbEl.appendChild(locIcon);
+      const suburbSpan = document.createElement('span');
+      suburbSpan.textContent = item['Suburb'];
+      suburbEl.appendChild(suburbSpan);
+      // Badge row
+      const badgeRow = document.createElement('div');
+      badgeRow.className = 'badge-row';
+      // Price
+      const priceBadge = document.createElement('span');
+      priceBadge.className = 'badge price';
+      const priceIcon = document.createElement('i');
+      priceIcon.className = 'fa-solid fa-dollar-sign';
+      priceBadge.appendChild(priceIcon);
+      const priceText = document.createElement('span');
+      priceText.textContent = ' ' + (item['Price (AUD)'] ? '$' + item['Price (AUD)'] : '');
+      priceBadge.appendChild(priceText);
+      badgeRow.appendChild(priceBadge);
+      // Duration
+      if (item['Duration']) {
+        const durBadge = document.createElement('span');
+        durBadge.className = 'badge duration';
+        const clockIcon = document.createElement('i');
+        clockIcon.className = 'fa-regular fa-clock';
+        durBadge.appendChild(clockIcon);
+        const durText = document.createElement('span');
+        durText.textContent = ' ' + item['Duration'];
+        durBadge.appendChild(durText);
+        badgeRow.appendChild(durBadge);
+      }
+      // Cuisine
+      if (item['Cuisine']) {
+        const cuisineBadge = document.createElement('span');
+        cuisineBadge.className = 'badge cuisine';
+        const cuisineText = document.createElement('span');
+        cuisineText.textContent = item['Cuisine'];
+        cuisineBadge.appendChild(cuisineText);
+        badgeRow.appendChild(cuisineBadge);
+      }
+      // Schedule string (days & times)
+      const scheduleEl = document.createElement('div');
+      scheduleEl.className = 'schedule';
+      const daysStr = item['Brunch Days'] || '';
+      const timeStr = item['Start/End Time'] || '';
+      let scheduleText = '';
+      if (daysStr) scheduleText += daysStr;
+      if (timeStr) scheduleText += (scheduleText ? ' • ' : '') + timeStr;
+      scheduleEl.textContent = scheduleText;
+      // Days row
+      const daysRow = document.createElement('div');
+      daysRow.className = 'days-row';
+      const daysAvailable = parseDays(daysStr);
+      daysRow.appendChild(createDayElements(daysAvailable));
+      // Links row
+      const linksRow = document.createElement('div');
+      linksRow.className = 'links';
+      // website link
+      if (item['Website URL']) {
+        const link = document.createElement('a');
+        link.href = item['Website URL'];
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.innerHTML = '<i class="fa-solid fa-globe"></i>';
+        linksRow.appendChild(link);
+      }
+      // Instagram link
+      if (item['Instagram URL']) {
+        const link = document.createElement('a');
+        link.href = item['Instagram URL'];
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.innerHTML = '<i class="fa-brands fa-instagram"></i>';
+        linksRow.appendChild(link);
+      }
+      // Maps link
+      if (item['Google Maps URL']) {
+        const link = document.createElement('a');
+        link.href = item['Google Maps URL'];
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.innerHTML = '<i class="fa-solid fa-location-arrow"></i>';
+        linksRow.appendChild(link);
+      }
+      // Append all to card
+      card.appendChild(nameEl);
+      card.appendChild(suburbEl);
+      card.appendChild(badgeRow);
+      card.appendChild(scheduleEl);
+      card.appendChild(daysRow);
+      card.appendChild(linksRow);
+      return card;
     }
 
-    // Initialize
-    loadCSV().then(data => {
-      let allData = data;
-      renderCards(allData);
-      const searchInput = document.getElementById('search-input');
-      searchInput.addEventListener('input', () => {
-        renderCards(allData, searchInput.value);
+    (async function() {
+      const data = await loadData();
+      // Populate selects
+      const suburbSet = new Set();
+      const cuisineSet = new Set();
+      data.forEach(item => {
+        if (item['Suburb']) suburbSet.add(item['Suburb']);
+        if (item['Cuisine']) cuisineSet.add(item['Cuisine']);
       });
-    });
+      populateSelect(document.getElementById('filter-suburb'), suburbSet);
+      populateSelect(document.getElementById('filter-cuisine'), cuisineSet);
+      const cardGrid = document.getElementById('card-grid');
+      const spotCount = document.getElementById('spot-count');
+      spotCount.textContent = `${data.length} spots`;
+      function render() {
+        const searchVal = document.getElementById('search-input').value.toLowerCase();
+        const suburbVal = document.getElementById('filter-suburb').value;
+        const cuisineVal = document.getElementById('filter-cuisine').value;
+        cardGrid.innerHTML = '';
+        let filtered = data.filter(item => {
+          const matchesSearch = !searchVal || (item['Name'] && item['Name'].toLowerCase().includes(searchVal)) || (item['Suburb'] && item['Suburb'].toLowerCase().includes(searchVal));
+          const matchesSuburb = !suburbVal || item['Suburb'] === suburbVal;
+          const matchesCuisine = !cuisineVal || item['Cuisine'] === cuisineVal;
+          return matchesSearch && matchesSuburb && matchesCuisine;
+        });
+        // Update count
+        spotCount.textContent = `${filtered.length} of ${data.length} spots`;
+        filtered.forEach(item => {
+          cardGrid.appendChild(createCard(item));
+        });
+      }
+      document.getElementById('search-input').addEventListener('input', render);
+      document.getElementById('filter-suburb').addEventListener('change', render);
+      document.getElementById('filter-cuisine').addEventListener('change', render);
+      render();
+    })();
   </script>
 </body>
 </html>
