@@ -47,10 +47,15 @@
     }
     #card-container {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(1, 1fr);
       gap: 16px;
     }
-    @media (min-width: 700px) {
+    @media (min-width: 600px) {
+      #card-container {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (min-width: 900px) {
       #card-container {
         grid-template-columns: repeat(3, 1fr);
       }
@@ -63,12 +68,15 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-      cursor: default;
+      transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out, background-color 0.15s ease-in-out;
+      cursor: pointer;
+      user-select: none;
     }
-    .card:hover {
+    .card:hover, .card:focus-visible {
       transform: translateY(-4px);
       box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+      background-color: #f0f8ff;
+      outline: none;
     }
     .card-header {
       margin-bottom: 12px;
@@ -120,15 +128,6 @@
       background-color: #4caf50;
       box-shadow: 0 1px 5px rgba(76,175,80,0.6);
     }
-    .field-row {
-      font-size: 14px;
-      margin-bottom: 8px;
-      color: #444;
-      line-height: 1.3;
-    }
-    .field-row strong {
-      color: #2c3e50;
-    }
     .icon-links {
       margin-top: auto;
       display: flex;
@@ -140,21 +139,122 @@
       font-size: 20px;
       transition: color 0.2s ease;
     }
-    .icon-links a:hover {
+    .icon-links a:hover, .icon-links a:focus {
       color: #004a99;
+      outline: none;
+    }
+
+    /* Modal styles */
+    #detail-modal {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    #detail-modal.active {
+      display: flex;
+    }
+    #detail-modal .modal-content {
+      background: #fff;
+      border-radius: 12px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 24px 32px 32px 32px;
+      position: relative;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      outline: none;
+    }
+    #detail-modal .close-button {
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      font-size: 28px;
+      font-weight: bold;
+      color: #888;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.2s ease;
+    }
+    #detail-modal .close-button:hover,
+    #detail-modal .close-button:focus {
+      color: #333;
+      outline: none;
+    }
+    #detail-modal h2 {
+      margin-bottom: 16px;
+      font-weight: 900;
+      color: #2c3e50;
+    }
+    #detail-modal .badges-row {
+      margin-bottom: 20px;
+    }
+    #detail-modal .days-row {
+      margin-bottom: 20px;
+    }
+    #detail-modal .field-row {
+      margin-bottom: 12px;
+      font-size: 15px;
+      color: #444;
+      line-height: 1.4;
+    }
+    #detail-modal .field-row strong {
+      color: #2c3e50;
     }
   </style>
 </head>
 <body>
+  <div id="timestamp" style="text-align:center; margin-bottom:8px; font-size: 13px; color: #888;"></div>
   <h1>Bottomless Brunch Sydney</h1>
   <div id="search-container">
-    <input type="text" id="search-input" placeholder="Search by suburb or name..." />
+    <input type="text" id="search-input" placeholder="Search by suburb or name..." aria-label="Search venues by suburb or name" />
   </div>
   <div id="card-container"></div>
 
+  <div id="detail-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
+    <div class="modal-content" tabindex="0">
+      <button class="close-button" aria-label="Close modal">&times;</button>
+      <h2 id="modal-title"></h2>
+      <div class="badges-row"></div>
+      <div class="days-row"></div>
+      <div class="detail-fields"></div>
+      <div class="icon-links"></div>
+    </div>
+  </div>
+
   <script>
+    // Set timestamp to last modified time of the HTML file
+    function pad2(n) { return n < 10 ? '0' + n : n; }
+    function formatDateTime(dt) {
+      return dt.getFullYear() + '-' +
+        pad2(dt.getMonth() + 1) + '-' +
+        pad2(dt.getDate()) + ' ' +
+        pad2(dt.getHours()) + ':' +
+        pad2(dt.getMinutes()) + ':' +
+        pad2(dt.getSeconds());
+    }
+    const lastModifiedDate = new Date(document.lastModified);
+    document.getElementById('timestamp').textContent =
+      'Page last updated: ' + formatDateTime(lastModifiedDate);
+
     const cardContainer = document.getElementById('card-container');
     const searchInput = document.getElementById('search-input');
+
+    // Modal elements
+    const modal = document.getElementById('detail-modal');
+    const modalContent = modal.querySelector('.modal-content');
+    const modalTitle = modal.querySelector('#modal-title');
+    const modalBadgesRow = modal.querySelector('.badges-row');
+    const modalDaysRow = modal.querySelector('.days-row');
+    const modalDetailFields = modal.querySelector('.detail-fields');
+    const modalIconLinks = modal.querySelector('.icon-links');
+    const closeButton = modal.querySelector('.close-button');
 
     // Weekday initials in order: Sun to Sat
     const WEEKDAYS = ['S','M','T','W','T','F','S'];
@@ -214,6 +314,31 @@
       return a;
     }
 
+    // Focus trap for modal
+    function trapFocus(element) {
+      const focusableElements = element.querySelectorAll('a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])');
+      const firstFocusable = focusableElements[0];
+      const lastFocusable = focusableElements[focusableElements.length - 1];
+
+      function handleFocus(e) {
+        if (e.key === 'Tab' || e.keyCode === 9) {
+          if (e.shiftKey) { // shift + tab
+            if (document.activeElement === firstFocusable) {
+              e.preventDefault();
+              lastFocusable.focus();
+            }
+          } else { // tab
+            if (document.activeElement === lastFocusable) {
+              e.preventDefault();
+              firstFocusable.focus();
+            }
+          }
+        }
+      }
+      element.addEventListener('keydown', handleFocus);
+      return () => element.removeEventListener('keydown', handleFocus);
+    }
+
     // Render cards with optional filter
     function renderCards(data, filterText = '') {
       cardContainer.innerHTML = '';
@@ -229,6 +354,9 @@
 
         const card = document.createElement('div');
         card.className = 'card';
+        card.tabIndex = 0;
+        card.setAttribute('role', 'button');
+        card.setAttribute('aria-pressed', 'false');
 
         // Header
         const header = document.createElement('div');
@@ -238,9 +366,13 @@
         header.appendChild(h2);
         card.appendChild(header);
 
-        // Badges container
+        // Suburb badge
         const badgesRow = document.createElement('div');
         badgesRow.className = 'badges-row';
+
+        if (suburb) {
+          badgesRow.appendChild(createBadge(suburb));
+        }
 
         // Price badge
         if (item['Price (AUD)']) {
@@ -264,7 +396,6 @@
         }
 
         // Days row (weekday initials with green/grey)
-        // We look for field 'Days' or 'Days Open' or 'Open Days' or 'Days Available'
         const daysField = ['Days', 'Days Open', 'Open Days', 'Days Available'].find(f => item[f]);
         if (daysField) {
           const daysStr = item[daysField];
@@ -276,25 +407,6 @@
           });
           card.appendChild(daysRow);
         }
-
-        // Other fields to show as label: value pairs, excluding those already shown or used for icon links
-        // Exclude Name, Price (AUD), Price, Cuisine, Duration, Days fields, Website URL, Instagram URL, Map URL
-        const excludeFields = new Set([
-          'Name', 'Price (AUD)', 'Price', 'Cuisine', 'Duration',
-          'Days', 'Days Open', 'Open Days', 'Days Available',
-          'Website URL', 'Instagram URL', 'Map URL'
-        ]);
-        const otherFields = Object.keys(item).filter(f => item[f] && !excludeFields.has(f));
-
-        otherFields.forEach(field => {
-          const row = document.createElement('div');
-          row.className = 'field-row';
-          const strong = document.createElement('strong');
-          strong.textContent = `${field}: `;
-          row.appendChild(strong);
-          row.appendChild(document.createTextNode(item[field]));
-          card.appendChild(row);
-        });
 
         // Icon links row
         const iconLinks = document.createElement('div');
@@ -310,9 +422,119 @@
           card.appendChild(iconLinks);
         }
 
+        // Click and keyboard event to open modal with full info
+        card.addEventListener('click', () => openModal(item));
+        card.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openModal(item);
+          }
+        });
+
         cardContainer.appendChild(card);
       });
     }
+
+    // Open modal with full info
+    let removeFocusTrap = null;
+    function openModal(item) {
+      modalTitle.textContent = item['Name'] || '';
+
+      // Clear previous content
+      modalBadgesRow.innerHTML = '';
+      modalDaysRow.innerHTML = '';
+      modalDetailFields.innerHTML = '';
+      modalIconLinks.innerHTML = '';
+
+      // Badges: Price, Cuisine, Duration
+      if (item['Price (AUD)']) {
+        modalBadgesRow.appendChild(createBadge(`$${item['Price (AUD)']} per person`));
+      } else if (item['Price']) {
+        modalBadgesRow.appendChild(createBadge(item['Price']));
+      }
+      if (item['Cuisine']) {
+        modalBadgesRow.appendChild(createBadge(item['Cuisine']));
+      }
+      if (item['Duration']) {
+        modalBadgesRow.appendChild(createBadge(item['Duration']));
+      }
+
+      // Days
+      const daysField = ['Days', 'Days Open', 'Open Days', 'Days Available'].find(f => item[f]);
+      if (daysField) {
+        const daysStr = item[daysField];
+        const openDays = parseDays(daysStr);
+        WEEKDAYS.forEach((letter, idx) => {
+          modalDaysRow.appendChild(createDayElement(letter, openDays.has(idx)));
+        });
+      }
+
+      // Show all fields except those excluded from modal: none excluded, show all
+      // But exclude empty fields and icon link fields (Website URL, Instagram URL, Map URL)
+      const excludeFields = new Set(['Website URL', 'Instagram URL', 'Map URL']);
+      Object.keys(item).forEach(field => {
+        if (item[field] && !excludeFields.has(field) && field !== 'Name') {
+          const row = document.createElement('div');
+          row.className = 'field-row';
+          const strong = document.createElement('strong');
+          strong.textContent = `${field}: `;
+          row.appendChild(strong);
+          row.appendChild(document.createTextNode(item[field]));
+          modalDetailFields.appendChild(row);
+        }
+      });
+
+      // Icon links
+      const websiteLink = createIconLink(item['Website URL'], 'fas fa-globe', 'Website');
+      const instagramLink = createIconLink(item['Instagram URL'], 'fab fa-instagram', 'Instagram');
+      const mapLink = createIconLink(item['Map URL'], 'fas fa-map-marker-alt', 'Map');
+
+      [websiteLink, instagramLink, mapLink].forEach(link => {
+        if (link) modalIconLinks.appendChild(link);
+      });
+
+      modal.classList.add('active');
+      modal.setAttribute('aria-hidden', 'false');
+      modalContent.focus();
+
+      // Trap focus inside modal
+      removeFocusTrap = trapFocus(modalContent);
+
+      // Disable background scroll
+      document.body.style.overflow = 'hidden';
+    }
+
+    // Close modal
+    function closeModal() {
+      modal.classList.remove('active');
+      modal.setAttribute('aria-hidden', 'true');
+      // Remove focus trap
+      if (removeFocusTrap) removeFocusTrap();
+      removeFocusTrap = null;
+
+      // Restore background scroll
+      document.body.style.overflow = '';
+
+      // Return focus to search input for accessibility
+      searchInput.focus();
+    }
+
+    // Close modal on close button click
+    closeButton.addEventListener('click', closeModal);
+
+    // Close modal on backdrop click (outside modal content)
+    modal.addEventListener('click', e => {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && modal.classList.contains('active')) {
+        closeModal();
+      }
+    });
 
     // Load CSV and initialize
     async function loadAndRenderCSV() {
