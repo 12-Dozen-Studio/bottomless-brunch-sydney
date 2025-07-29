@@ -3,556 +3,173 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bottomless Brunch Sydney</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" crossorigin="anonymous" />
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <title>Bottomless Brunch Finder</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    /* Simple reset */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
     body {
+      margin: 0;
       font-family: Arial, sans-serif;
-      line-height: 1.5;
-      background: #fafafa;
-      color: #333;
-      padding: 20px;
     }
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-      font-weight: 700;
-      font-size: 2rem;
-    }
-    #search-container {
-      display: flex;
-      justify-content: center;
-      margin-bottom: 20px;
-    }
-    #search-input {
+    #map {
+      height: 300px;
       width: 100%;
-      max-width: 400px;
-      padding: 10px 14px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 16px;
-      transition: border-color 0.3s ease;
     }
-    #search-input:focus {
-      outline: none;
-      border-color: #0073e6;
-      box-shadow: 0 0 5px rgba(0,115,230,0.5);
+    .filters {
+      padding: 10px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
     }
-    .card-container {
-      max-width: 960px;
-      margin: auto;
-      padding: 1rem;
+    .filter {
+      flex: 1;
     }
-    #card-container {
-      display: grid;
-      grid-template-columns: repeat(1, 1fr);
-      gap: 16px;
-    }
-    @media (min-width: 600px) {
-      #card-container {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-    @media (min-width: 900px) {
-      #card-container {
-        grid-template-columns: repeat(3, 1fr);
-      }
+    .list {
+      padding: 10px;
     }
     .card {
-      margin-bottom: 1rem;
-      padding: 1rem;
-      border: 1px solid #eee;
-      border-radius: 12px;
-      background: #fff;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out, background-color 0.15s ease-in-out;
+      background: #f8f8f8;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
       cursor: pointer;
-      user-select: none;
     }
-    .card:hover, .card:focus-visible {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 20px rgba(0,0,0,0.12);
-      background-color: #f0f8ff;
-      outline: none;
-    }
-    .card-header {
-      margin-bottom: 12px;
-    }
-    .card-header h2 {
-      font-size: 1.25rem;
-      font-weight: 600;
-      margin-bottom: 0.25rem;
-      color: #2c3e50;
-      line-height: 1.1;
-    }
-    .suburb {
-      font-size: 0.875rem;
-      color: #777;
-      display: flex;
-      align-items: center;
-      gap: 0.4em;
-      margin-bottom: 0.6em;
-      opacity: 0.85;
-    }
-    .meta-badges {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5em;
-      margin-bottom: 0.8em;
-    }
-    .badge {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 0.875rem;
-      margin-right: 0.5rem;
-      font-weight: 500;
-      white-space: nowrap;
-    }
-    .badge.price { background-color: #e6f4ea; color: #2e7d32; }
-    .badge.duration { background-color: #e9f1fb; color: #1e40af; }
-    .badge.cuisine { background-color: #f5eee5; color: #5d3a00; }
-    .days-available {
-      display: flex;
-      gap: 6px;
-      margin-top: 8px;
-    }
-    .day {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background-color: #ccc;
-      display: inline-block;
-    }
-    .day.active {
-      background-color: #8ccbbb;
-    }
-
-    /* Modal styles */
-    #detail-modal {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.5);
+    .modal {
       display: none;
-      align-items: center;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
       justify-content: center;
+      align-items: center;
       z-index: 1000;
     }
-    #detail-modal.active {
-      display: flex;
-    }
-    #detail-modal .modal-content {
-      background: #fff;
-      border-radius: 12px;
-      max-width: 600px;
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 400px;
       width: 90%;
-      max-height: 90vh;
-      overflow-y: auto;
-      padding: 24px 32px 32px 32px;
-      position: relative;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-      outline: none;
     }
-    #detail-modal .close-button {
-      position: absolute;
-      top: 12px;
-      right: 16px;
-      font-size: 28px;
-      font-weight: bold;
-      color: #888;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      user-select: none;
-      transition: color 0.2s ease;
-    }
-    #detail-modal .close-button:hover,
-    #detail-modal .close-button:focus {
-      color: #333;
-      outline: none;
-    }
-    #detail-modal h2 {
-      margin-bottom: 16px;
-      font-weight: 900;
-      color: #2c3e50;
-    }
-    #detail-modal .badges-row {
-      margin-bottom: 20px;
-    }
-    #detail-modal .days-row {
-      margin-bottom: 20px;
-    }
-    #detail-modal .field-row {
-      margin-bottom: 12px;
-      font-size: 15px;
-      color: #444;
-      line-height: 1.4;
-    }
-    #detail-modal .field-row strong {
-      color: #2c3e50;
+    .footer {
+      text-align: center;
+      font-size: 0.8em;
+      color: #666;
+      padding: 10px;
     }
   </style>
 </head>
 <body>
-  <div id="timestamp" style="text-align:center; margin-bottom:8px; font-size: 13px; color: #888;"></div>
-  <h1>Bottomless Brunch Sydney</h1>
-  <div id="search-container">
-    <input type="text" id="search-input" placeholder="Search by suburb or name..." aria-label="Search venues by suburb or name" />
-  </div>
-  <div class="card-container">
-    <div id="card-container"></div>
-  </div>
-
-  <div id="detail-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
-    <div class="modal-content" tabindex="0">
-      <button class="close-button" aria-label="Close modal">&times;</button>
-      <h2 id="modal-title"></h2>
-      <div class="badges-row"></div>
-      <div class="days-row"></div>
-      <div class="detail-fields"></div>
-      <div class="icon-links"></div>
-    </div>
+  <div class="filters">
+    <select id="dayFilter" class="filter">
+      <option value="all">All Days</option>
+      <option value="Thursday">Thursday</option>
+      <option value="Friday">Friday</option>
+      <option value="Saturday">Saturday</option>
+      <option value="Sunday">Sunday</option>
+    </select>
+    <select id="areaFilter" class="filter"></select>
   </div>
 
+  <div id="map"></div>
+  <div class="list" id="venueList"></div>
+
+  <div class="modal" id="modal">
+    <div class="modal-content" id="modalContent"></div>
+  </div>
+
+  <div class="footer">
+    Page last updated: <span id="lastModified"></span>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    // Set timestamp to last modified time of the HTML file
-    function pad2(n) { return n < 10 ? '0' + n : n; }
-    function formatDateTime(dt) {
-      return dt.getFullYear() + '-' +
-        pad2(dt.getMonth() + 1) + '-' +
-        pad2(dt.getDate()) + ' ' +
-        pad2(dt.getHours()) + ':' +
-        pad2(dt.getMinutes()) + ':' +
-        pad2(dt.getSeconds());
+    let map;
+    let markers = [];
+    let venues = [];
+
+    async function init() {
+      const res = await fetch("brunch_sample_10.json");
+      venues = await res.json();
+
+      map = L.map("map").setView([-33.87, 151.21], 12);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+
+      populateAreaFilter();
+      render();
+
+      document.getElementById("dayFilter").addEventListener("change", render);
+      document.getElementById("areaFilter").addEventListener("change", render);
+
+      const lastModified = new Date(document.lastModified);
+      document.getElementById("lastModified").textContent = formatDateTime(lastModified);
     }
-    const lastModifiedDate = new Date(document.lastModified);
-    document.getElementById('timestamp').textContent =
-      'Page last updated: ' + formatDateTime(lastModifiedDate);
 
-    const cardContainer = document.getElementById('card-container');
-    const searchInput = document.getElementById('search-input');
+    function populateAreaFilter() {
+      const areaSelect = document.getElementById("areaFilter");
+      const areas = [...new Set(venues.map(v => v.suburb))];
+      areaSelect.innerHTML = '<option value="all">All Areas</option>' + areas.map(area => `<option value="${area}">${area}</option>`).join('');
+    }
 
-    // Modal elements
-    const modal = document.getElementById('detail-modal');
-    const modalContent = modal.querySelector('.modal-content');
-    const modalTitle = modal.querySelector('#modal-title');
-    const modalBadgesRow = modal.querySelector('.badges-row');
-    const modalDaysRow = modal.querySelector('.days-row');
-    const modalDetailFields = modal.querySelector('.detail-fields');
-    const modalIconLinks = modal.querySelector('.icon-links');
-    const closeButton = modal.querySelector('.close-button');
+    function render() {
+      const day = document.getElementById("dayFilter").value;
+      const area = document.getElementById("areaFilter").value;
 
-    // Weekday initials in order: Sun to Sat
-    const WEEKDAYS = ['S','M','T','W','T','F','S'];
-
-    // Normalize day names to weekday indexes 0=Sun ... 6=Sat
-    const dayNameToIndex = {
-      'sun': 0, 'sunday': 0,
-      'mon': 1, 'monday': 1,
-      'tue': 2, 'tues': 2, 'tuesday': 2,
-      'wed': 3, 'wednesday': 3,
-      'thu': 4, 'thurs': 4, 'thursday': 4,
-      'fri': 5, 'friday': 5,
-      'sat': 6, 'saturday': 6
-    };
-
-    // Parse days string into set of weekday indexes
-    function parseDays(daysStr) {
-      if (!daysStr) return new Set();
-      const days = daysStr.toLowerCase().split(/[,;\s]+/).filter(Boolean);
-      const dayIndexes = new Set();
-      days.forEach(d => {
-        if (dayNameToIndex.hasOwnProperty(d)) {
-          dayIndexes.add(dayNameToIndex[d]);
-        }
+      const filtered = venues.filter(v => {
+        const matchDay = day === "all" || (v.days && v.days.includes(day));
+        const matchArea = area === "all" || v.suburb === area;
+        return matchDay && matchArea;
       });
-      return dayIndexes;
-    }
 
-    // Create badge element for meta info
-    function createMetaBadge(type, text, iconClass = null) {
-      const span = document.createElement('span');
-      span.className = 'badge ' + type;
-      if (iconClass) {
-        const icon = document.createElement('i');
-        icon.className = iconClass;
-        icon.style.marginRight = '0.3em';
-        span.appendChild(icon);
-      }
-      span.appendChild(document.createTextNode(text));
-      return span;
-    }
+      markers.forEach(m => m.remove());
+      markers = [];
 
-    // Create suburb element with icon
-    function createSuburb(suburb) {
-      const div = document.createElement('div');
-      div.className = 'suburb';
-      const icon = document.createElement('i');
-      icon.className = 'fas fa-map-marker-alt';
-      div.appendChild(icon);
-      div.appendChild(document.createTextNode(suburb));
-      return div;
-    }
+      const list = document.getElementById("venueList");
+      list.innerHTML = "";
 
-    // Create graphical days-of-week display
-    function createDaysAvailable(openDaysSet) {
-      const daysDiv = document.createElement('div');
-      daysDiv.className = 'days-available';
-      for (let i = 0; i < 7; i++) {
-        const dot = document.createElement('span');
-        dot.className = 'day' + (openDaysSet.has(i) ? ' active' : '');
-        daysDiv.appendChild(dot);
-      }
-      return daysDiv;
-    }
+      filtered.forEach(v => {
+        const div = document.createElement("div");
+        div.className = "card";
+        div.innerHTML = `<strong>${v.name}</strong><br>${v.suburb} | $${v.price}<br>${v.sessions.join(", ")}`;
+        div.onclick = () => showModal(v);
+        list.appendChild(div);
 
-    // Create icon link element
-    function createIconLink(href, iconClass, label) {
-      if (!href) return null;
-      const a = document.createElement('a');
-      a.href = href;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      a.setAttribute('aria-label', label);
-      const icon = document.createElement('i');
-      icon.className = iconClass;
-      a.appendChild(icon);
-      return a;
-    }
-
-    // Focus trap for modal
-    function trapFocus(element) {
-      const focusableElements = element.querySelectorAll('a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])');
-      const firstFocusable = focusableElements[0];
-      const lastFocusable = focusableElements[focusableElements.length - 1];
-
-      function handleFocus(e) {
-        if (e.key === 'Tab' || e.keyCode === 9) {
-          if (e.shiftKey) { // shift + tab
-            if (document.activeElement === firstFocusable) {
-              e.preventDefault();
-              lastFocusable.focus();
-            }
-          } else { // tab
-            if (document.activeElement === lastFocusable) {
-              e.preventDefault();
-              firstFocusable.focus();
-            }
-          }
-        }
-      }
-      element.addEventListener('keydown', handleFocus);
-      return () => element.removeEventListener('keydown', handleFocus);
-    }
-
-    // Render cards with optional filter
-    function renderCards(data, filterText = '') {
-      cardContainer.innerHTML = '';
-      const lowerFilter = filterText.toLowerCase();
-
-      data.forEach(item => {
-        const name = item['Name'] || '';
-        const suburb = item['Suburb'] || '';
-
-        if (lowerFilter && !name.toLowerCase().includes(lowerFilter) && !suburb.toLowerCase().includes(lowerFilter)) {
-          return;
-        }
-
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.tabIndex = 0;
-        card.setAttribute('role', 'button');
-        card.setAttribute('aria-pressed', 'false');
-
-        // Header
-        const header = document.createElement('div');
-        header.className = 'card-header';
-        const h2 = document.createElement('h2');
-        h2.textContent = name;
-        header.appendChild(h2);
-        card.appendChild(header);
-
-        // Suburb line with pin icon
-        if (suburb) {
-          card.appendChild(createSuburb(suburb));
-        }
-
-        // Meta badges (price, duration, cuisine)
-        const metaBadges = document.createElement('div');
-        metaBadges.className = 'meta-badges';
-        let hasMeta = false;
-        if (item['Price (AUD)']) {
-          metaBadges.appendChild(createMetaBadge('price', `$${item['Price (AUD)']}`, 'fas fa-dollar-sign'));
-          hasMeta = true;
-        } else if (item['Price']) {
-          metaBadges.appendChild(createMetaBadge('price', item['Price'], 'fas fa-dollar-sign'));
-          hasMeta = true;
-        }
-        if (item['Duration']) {
-          metaBadges.appendChild(createMetaBadge('duration', item['Duration'], 'fas fa-clock'));
-          hasMeta = true;
-        }
-        if (item['Cuisine']) {
-          metaBadges.appendChild(createMetaBadge('cuisine', item['Cuisine']));
-          hasMeta = true;
-        }
-        if (hasMeta) {
-          card.appendChild(metaBadges);
-        }
-
-        // Days-of-week display (graphical dots)
-        const daysField = ['Days', 'Days Open', 'Open Days', 'Days Available'].find(f => item[f]);
-        if (daysField) {
-          const daysStr = item[daysField];
-          const openDays = parseDays(daysStr);
-          card.appendChild(createDaysAvailable(openDays));
-        }
-
-        // Click and keyboard event to open modal with full info
-        card.addEventListener('click', () => openModal(item));
-        card.addEventListener('keydown', e => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            openModal(item);
-          }
-        });
-
-        cardContainer.appendChild(card);
+        const marker = L.marker([-33.87 + Math.random() * 0.05, 151.21 + Math.random() * 0.05]).addTo(map)
+          .on('click', () => showModal(v));
+        markers.push(marker);
       });
     }
 
-    // Open modal with full info
-    let removeFocusTrap = null;
-    function openModal(item) {
-      modalTitle.textContent = item['Name'] || '';
-
-      // Clear previous content
-      modalBadgesRow.innerHTML = '';
-      modalDaysRow.innerHTML = '';
-      modalDetailFields.innerHTML = '';
-      modalIconLinks.innerHTML = '';
-
-      // Badges: Price, Cuisine, Duration
-      if (item['Price (AUD)']) {
-        modalBadgesRow.appendChild(createBadge(`$${item['Price (AUD)']} per person`));
-      } else if (item['Price']) {
-        modalBadgesRow.appendChild(createBadge(item['Price']));
-      }
-      if (item['Cuisine']) {
-        modalBadgesRow.appendChild(createBadge(item['Cuisine']));
-      }
-      if (item['Duration']) {
-        modalBadgesRow.appendChild(createBadge(item['Duration']));
-      }
-
-      // Days
-      const daysField = ['Days', 'Days Open', 'Open Days', 'Days Available'].find(f => item[f]);
-      if (daysField) {
-        const daysStr = item[daysField];
-        const openDays = parseDays(daysStr);
-        WEEKDAYS.forEach((letter, idx) => {
-          modalDaysRow.appendChild(createDayElement(letter, openDays.has(idx)));
-        });
-      }
-
-      // Show all fields except those excluded from modal: none excluded, show all
-      // But exclude empty fields and icon link fields (Website URL, Instagram URL, Map URL)
-      const excludeFields = new Set(['Website URL', 'Instagram URL', 'Map URL']);
-      Object.keys(item).forEach(field => {
-        if (item[field] && !excludeFields.has(field) && field !== 'Name') {
-          const row = document.createElement('div');
-          row.className = 'field-row';
-          const strong = document.createElement('strong');
-          strong.textContent = `${field}: `;
-          row.appendChild(strong);
-          row.appendChild(document.createTextNode(item[field]));
-          modalDetailFields.appendChild(row);
-        }
-      });
-
-      // Icon links
-      const websiteLink = createIconLink(item['Website URL'], 'fas fa-globe', 'Website');
-      const instagramLink = createIconLink(item['Instagram URL'], 'fab fa-instagram', 'Instagram');
-      const mapLink = createIconLink(item['Map URL'], 'fas fa-map-marker-alt', 'Map');
-
-      [websiteLink, instagramLink, mapLink].forEach(link => {
-        if (link) modalIconLinks.appendChild(link);
-      });
-
-      modal.classList.add('active');
-      modal.setAttribute('aria-hidden', 'false');
-      modalContent.focus();
-
-      // Trap focus inside modal
-      removeFocusTrap = trapFocus(modalContent);
-
-      // Disable background scroll
-      document.body.style.overflow = 'hidden';
+    function showModal(v) {
+      const modal = document.getElementById("modal");
+      const content = document.getElementById("modalContent");
+      content.innerHTML = `
+        <h3>${v.name}</h3>
+        <p><strong>Suburb:</strong> ${v.suburb}</p>
+        <p><strong>Sessions:</strong> ${v.sessions.join(", ")}</p>
+        <p><strong>Price:</strong> $${v.price}</p>
+        <p><strong>Duration:</strong> ${v.duration} mins</p>
+        <p><strong>Cuisine:</strong> ${v.cuisine}</p>
+        <p><strong>Description:</strong> ${v.description}</p>
+        <p><a href="${v.website}" target="_blank">Website</a></p>
+        ${v.instagram ? `<p><a href="${v.instagram}" target="_blank">Instagram</a></p>` : ""}
+        <button onclick="hideModal()">Close</button>
+      `;
+      modal.style.display = "flex";
     }
 
-    // Close modal
-    function closeModal() {
-      modal.classList.remove('active');
-      modal.setAttribute('aria-hidden', 'true');
-      // Remove focus trap
-      if (removeFocusTrap) removeFocusTrap();
-      removeFocusTrap = null;
-
-      // Restore background scroll
-      document.body.style.overflow = '';
-
-      // Return focus to search input for accessibility
-      searchInput.focus();
+    function hideModal() {
+      document.getElementById("modal").style.display = "none";
     }
 
-    // Close modal on close button click
-    closeButton.addEventListener('click', closeModal);
-
-    // Close modal on backdrop click (outside modal content)
-    modal.addEventListener('click', e => {
-      if (e.target === modal) {
-        closeModal();
-      }
-    });
-
-    // Close modal on Escape key
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && modal.classList.contains('active')) {
-        closeModal();
-      }
-    });
-
-    // Load CSV and initialize
-    async function loadAndRenderCSV() {
-      try {
-        const response = await fetch('bottomless_brunch_sydney.csv');
-        if (!response.ok) throw new Error('CSV file not found');
-        const csvText = await response.text();
-        const parsed = Papa.parse(csvText, {header: true, skipEmptyLines: true});
-        const data = parsed.data;
-
-        renderCards(data);
-
-        searchInput.addEventListener('input', () => {
-          renderCards(data, searchInput.value.trim());
-        });
-      } catch (error) {
-        console.error('Failed to load CSV:', error);
-        cardContainer.innerHTML = '<p style="text-align:center; color:#999;">Failed to load data.</p>';
-      }
+    function formatDateTime(date) {
+      const pad = (n) => n.toString().padStart(2, '0');
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
     }
 
-    loadAndRenderCSV();
+    init();
   </script>
 </body>
 </html>
