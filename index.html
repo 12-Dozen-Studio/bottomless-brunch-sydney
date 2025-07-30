@@ -7,6 +7,111 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <style>
+    .modal-pill-row {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      margin: 4px 0 2px 0;
+    }
+    .pill-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--pill-gap);
+    }
+    :root {
+      /* Color palette */
+      --color-bg: #ffffff;
+      --color-surface: #f5f1f1;
+      --color-border: #d8dfd0;
+      --color-accent-1: #556b2f; /* dark olive */
+      --color-accent-2: #e7c873; /* gold */
+      --color-accent-3: #f7e5d8; /* pale peach */
+      --color-accent-4: #cce1b0; /* light olive green */
+      --color-text-primary: #1d1f24;
+      --color-text-secondary: #666;
+      --color-text-caption: #888;
+      --color-text-white: #fff;
+      --color-icon: #888;
+      --color-link: #666;
+      --color-link-hover: #1d1f24;
+      --color-close: #444;
+      --color-pill-bg: #fff;
+      --color-pill-border: #888;
+      --color-pill-color: #1d1f24;
+      --color-pill-inactive-opacity: 0.3;
+      --color-pill-bg-accent: var(--color-accent-1);
+      --color-pill-border-accent: var(--color-accent-1);
+      /* Card/modal */
+      --radius-md: 16px;
+      --radius-sm: 6px;
+      --spacing-xl: 28px;
+      --spacing-lg: 20px;
+      --spacing-md: 12px;
+      --spacing-sm: 8px;
+      --spacing-xs: 4px;
+      --spacing-xxs: 2px;
+      /* Typography */
+      --font-title-size: 1.5rem;
+      --font-title-weight: 600;
+      --font-subtitle-size: 1rem;
+      --font-subtitle-weight: 400;
+      --font-section-title-size: 1rem;
+      --font-section-title-weight: 600;
+      --font-stat-value-size: 1.2rem;
+      --font-stat-value-weight: bold;
+      --font-stat-label-size: 0.875rem;
+      --font-body-size: 0.9rem;
+      --font-body-weight: 400;
+      --font-caption-size: 0.8rem;
+      --font-caption-weight: 400;
+      /* Pills */
+      --pill-radius: 999px; 
+      --pill-padding: 2px 10px;
+      --pill-font-size: 0.9rem;
+      --pill-gap: 3px;
+      --pill-height: 20px;
+      /* Icon sizes */
+      --icon-size: 16px;
+      --icon-link-size: 26px;
+      --icon-close-size: 28px;
+    }
+    /* Typography utility classes */
+    .text-title {
+      font-size: var(--font-title-size);
+      font-weight: var(--font-title-weight);
+      color: var(--color-text-primary);
+      margin: 0;
+    }
+    .text-subtitle {
+      font-size: var(--font-subtitle-size);
+      font-weight: var(--font-subtitle-weight);
+      color: var(--color-text-secondary);
+      margin: 0;
+    }
+    .text-stat {
+      font-size: var(--font-stat-value-size);
+      font-weight: var(--font-stat-value-weight);
+      color: var(--color-text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .text-body {
+      font-size: var(--font-body-size);
+      font-weight: var(--font-body-weight);
+      color: var(--color-text-primary);
+    }
+    .text-caption {
+      font-size: var(--font-caption-size);
+      font-weight: var(--font-caption-weight);
+      color: var(--color-text-caption);
+    }
+    .text-white {
+      color: var(--color-text-white) !important;
+    }
+    .text-center {
+      text-align: center;
+    }
     body {
       margin: 0;
       font-family: Arial, sans-serif;
@@ -34,10 +139,11 @@
     }
     .filter select {
       border: none;
-      border-radius: 20px;
+      border-radius: var(--pill-radius);
       padding: 6px 18px 6px 10px;
-      background-color: #f5f1f1;
-      font-size: 13px;
+      background-color: var(--color-surface);
+      font-size: var(--font-caption-size);
+      color: var(--color-text-primary);
       background-image: url('data:image/svg+xml;utf8,<svg fill="black" height="14" viewBox="0 0 24 24" width="14" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
       background-repeat: no-repeat;
       background-position: right 8px center;
@@ -56,19 +162,40 @@
       padding: 10px;
     }
     .card {
-      background: #f8f8f8;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 6px;
-      border: 1px solid #ddd;
+      background: var(--color-surface);
+      padding: var(--spacing-xs) var(--spacing-md);
+      margin-bottom: var(--spacing-md);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-border);
       cursor: pointer;
       display: flex;
       justify-content: space-between;
       align-items: stretch;
-      height: 100px;
+      height: 80px;
     }
     .card-info {
       flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+      gap: var(--spacing-xs);
+    }
+    .card-stats-row {
+      display: flex;
+      gap: var(--spacing-xs);
+      margin-top: 2px;
+      margin-bottom: 0;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .stat-pill {
+      background: #f2f2f2;
+      font-weight: 600;
+      border: 1px solid #e0e0e0;
+      color: var(--color-text-primary);
+      padding: 2px 10px;
     }
     .modal {
       display: none;
@@ -83,8 +210,8 @@
       align-items: flex-end;
     }
     .modal-content {
-      background: white;
-      border-radius: 16px 16px 0 0;
+      background: var(--color-bg);
+      border-radius: var(--radius-md) var(--radius-md) 0 0;
       width: 100%;
       max-width: 480px;
       padding: 0;
@@ -129,84 +256,153 @@
       flex-shrink: 0;
     }
     .modal-header {
-      padding: 20px;
-      border-top-left-radius: 16px;
-      border-top-right-radius: 16px;
-      background: white;
+      padding: var(--spacing-lg);
+      border-top-left-radius: var(--radius-md);
+      border-top-right-radius: var(--radius-md);
+      background: var(--color-bg);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: var(--spacing-sm);
     }
-    .modal-header .title {
-      font-size: 1.5rem;
-      font-weight: 600;
-      margin: 0;
-    }
-    .modal-header .suburb {
-      font-size: 1rem;
-      color: #666;
-      margin-top: 4px;
-    }
-    .modal-close-button {
+    .modal-close-btn {
       background: none;
       border: none;
       cursor: pointer;
-      color: #444;
-      font-size: 24px;
+      color: var(--color-close);
+      font-size: var(--icon-close-size);
       display: flex;
       align-items: center;
       justify-content: center;
+      align-self: flex-start;
+      padding: 0;
     }
     .modal-stats {
       display: flex;
       justify-content: space-around;
-      padding: 16px 20px;
-      background: white;
-      border-top: 1px solid #eee;
+      padding: var(--spacing-md) var(--spacing-lg);
+      background: var(--color-bg);
+      border-top: 1px solid var(--color-border);
     }
     .modal-stat {
       text-align: center;
+      flex: 1;
+      min-width: 0;
     }
-    .modal-stat .value {
-      font-weight: bold;
-      font-size: 1.2rem;
+    .modal-stat .text-stat {
+      max-width: 100%;
+      display: inline-block;
+      line-height: 1.4;
     }
-    .modal-stat .label {
-      font-size: 0.875rem;
-      color: #888;
+    .modal-stat .cuisine-truncate {
+      max-width: 100px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: inline-block;
+    }
+    .modal-stat .text-caption {
       margin-top: 2px;
+      font-size: var(--font-stat-label-size);
+      color: var(--color-text-caption);
     }
     .modal-section {
-      background: white;
-      padding: 16px 20px;
-      border-top: 1px solid #eee;
+      background: var(--color-bg);
+      padding: var(--spacing-md) var(--spacing-lg);
+      border-top: 1px solid var(--color-border);
     }
-    .modal-section h3 {
-      font-weight: bold;
-      margin: 0 0 12px 0;
+    .modal-section .text-title {
+      font-size: var(--font-section-title-size);
+      font-weight: var(--font-section-title-weight);
+      margin: 0 0 2px 0;
     }
-    .day-pill {
-      background-color: #eee;
-      border-radius: 16px;
-      padding: 0 12px;
-      height: 32px;
+    .modal-links {
       display: flex;
+      justify-content: space-around;
+      align-items: center;
+      text-align: center;
+      gap: var(--spacing-sm);
+      margin-top: 0;
+      margin-bottom: 0;
+    }
+    .modal-links a {
+      color: var(--color-link);
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.2s;
+    }
+    .modal-links a:hover {
+      color: var(--color-link-hover);
+    }
+    .icon {
+      width: var(--icon-link-size);
+      height: var(--icon-link-size);
+      display: inline-block;
+      object-fit: contain;
+      color: var(--color-icon);
+    }
+    .material-icons.icon {
+      font-size: var(--icon-size) !important;
+      color: var(--color-icon);
+      line-height: 1;
+      vertical-align: middle;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-    }
-    .day {
-      background-color: transparent;
-      border-radius: 8px;
-      font-size: 0.8rem;
-      min-width: 20px;
-      height: 16px;
-      line-height: 16px;
-      text-align: center;
+      width: var(--icon-size);
+      height: var(--icon-size);
       padding: 0;
+      margin: 0;
+      box-sizing: content-box;
     }
-    .day.inactive {
-      opacity: 0.3;
+    .pill {
+      background: var(--color-pill-bg);
+      border: 1px solid var(--color-pill-border);
+      border-radius: var(--pill-radius);
+      padding: var(--pill-padding);
+      display: flex;
+      align-items: center;
+      font-size: var(--pill-font-size);
+      gap: var(--pill-gap);
+      color: var(--color-pill-color);
+      height: var(--pill-height);
+      min-width: 0;
+      box-sizing: border-box;
+    }
+    .pill.inactive {
+      opacity: var(--color-pill-inactive-opacity);
+    }
+    .pill-white {
+      background: #fff;
+      border: 1px solid var(--color-border);
+    }
+    .card-days-sessions-row {
+      display: flex;
+      justify-content: start;
+      align-items: flex-end;
+      margin-top: 2px;
+      gap: 7px;
+    }
+    .card-has-image {
+      background:
+        linear-gradient(to right, var(--color-surface) 0%, var(--color-surface)50%, rgba(248,248,248,0.0) 90%),
+        var(--card-image-url, none) right center / 50% 100% no-repeat,
+        var(--color-accent-4);
+      background-color: var(--color-surface);
+    }
+    .card-placeholder-gradient {
+      background:
+        linear-gradient(
+          to right,
+          var(--color-surface) 0%,
+          var(--color-surface) 50%,
+          var(--color-pill-border) 100%
+        ),
+        var(--color-pill-border);
+      background-color: var(--color-surface);
     }
   </style>
 </head>
@@ -325,14 +521,51 @@
       filtered.forEach(v => {
         const div = document.createElement("div");
         div.className = "card";
+        div.style.minHeight = "110px";
+        if (v.imageUrl && v.imageUrl.trim() !== "") {
+          div.classList.add("card-has-image");
+          div.style.setProperty('--card-image-url', `url('${v.imageUrl}')`);
+        } else {
+          div.classList.add("card-placeholder-gradient");
+        }
+
+        // Price pill background logic:
+        // < 90: default .pill, no inline background
+        // 90–109: background var(--color-accent-4)
+        // > 109: background var(--color-accent-3)
+        let pricePill;
+        if (v.price < 90) {
+          pricePill = `<div class="pill text-caption">$${v.price}</div>`;
+        } else if (v.price >= 90 && v.price <= 109) {
+          pricePill = `<div class="pill text-caption" style="background: var(--color-accent-4);">$${v.price}</div>`;
+        } else if (v.price > 109) {
+          pricePill = `<div class="pill text-caption" style="background: var(--color-accent-3);">$${v.price}</div>`;
+        }
+
+        // Pills for duration and cuisine (use text-caption class, no stat-pill or pill-white)
+        const durationPill = `<div class="pill text-caption"><span class="material-icons icon">schedule</span>${v.duration} min</div>`;
+        const cuisinePill = `<div class="pill text-caption">${v.cuisine || ""}</div>`;
+
+        // Days/sessions row: use .card-days-sessions-row, no inline styles
+        const daysRow = `
+          <div class="card-days-sessions-row">
+            <div class="text-caption card-days-row">${v.days?.join(", ") || ""}</div>
+            <div class="text-caption card-sessions-row">${v.sessions?.join(", ") || ""}</div>
+          </div>
+        `;
+
+        // Render card with required markup, no static inline overrides
         div.innerHTML = `
           <div class="card-info">
-            <strong>${v.name}</strong><br>
-            ${v.suburb} | $${v.price}<br>
-            ${v.days?.join(", ") || ""}<br>
-            ${v.cuisine || ""}
+            <h3 class="text-title">${v.name}</h3>
+            <div class="text-caption"><span class="material-icons icon">location_on</span> ${v.suburb}</div>
+            <div class="card-stats-row">
+              ${pricePill}
+              ${durationPill}
+              ${cuisinePill}
+            </div>
+            ${daysRow}
           </div>
-          <div class="image-box" style="background-image: url('${v.image || ""}');"></div>
         `;
         div.onclick = () => showModal(v);
         list.appendChild(div);
@@ -349,78 +582,76 @@
       const modal = document.getElementById("modal");
       const content = document.getElementById("modalContent");
 
-      function renderDayCircles(days) {
-        // Use full three-letter abbreviations for matching and display
-        const dayAbbrs = days ? days.map(d => {
-          if (typeof d === "string") {
-            let dayLower = d.toLowerCase();
-            if (dayLower.startsWith("mon")) return "Mon";
-            if (dayLower.startsWith("tue")) return "Tue";
-            if (dayLower.startsWith("wed")) return "Wed";
-            if (dayLower.startsWith("thu")) return "Thu";
-            if (dayLower.startsWith("fri")) return "Fri";
-            if (dayLower.startsWith("sat")) return "Sat";
-            if (dayLower.startsWith("sun")) return "Sun";
-          }
-          return "";
-        }) : [];
+      // Prepare days and sessions
+      const days = Array.isArray(v.days) ? v.days : [];
+      const sessions = Array.isArray(v.sessions) ? v.sessions : [];
 
-        const fullDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-        const dayLetters = ["M", "T", "W", "T", "F", "S", "S"];
-
-        let html = '<div style="display: flex; align-items: flex-start;"><div class="day-pill">';
-        fullDays.forEach((day, i) => {
-          const isAvailable = dayAbbrs.includes(day);
-          html += `<span class="day${isAvailable ? '' : ' inactive'}" title="${day}">${dayLetters[i]}</span>`;
-        });
-        html += '</div></div>';
-        return html;
-      }
+      // Compose pills for days
+      const dayPills = days.map(day =>
+        `<div class="pill text-caption">${day}</div>`
+      ).join('');
+      // Compose pills for sessions (first session pill as accent demo)
+      const sessionPills = sessions.map((session, i) =>
+        i === 0
+          ? `<div class="pill text-caption text-white" style="background: var(--color-accent-1); border-color: var(--color-accent-1);">${session}</div>`
+          : `<div class="pill text-caption">${session}</div>`
+      ).join('');
 
       content.innerHTML = `
   <div class="modal-header">
     <div>
-      <h2 class="title">${v.name}</h2>
-      <p class="suburb">${v.suburb}</p>
+      <h2 class="text-title">${v.name}</h2>
+      <p class="text-subtitle">${v.suburb}</p>
+      <div class="modal-pill-row">
+        <span class="material-icons icon">calendar_today</span>
+        <div class="pill-group">${dayPills}</div>
+      </div>
+      <div class="modal-pill-row">
+        <span class="material-icons icon">schedule</span>
+        <div class="pill-group">${sessionPills}</div>
+      </div>
     </div>
-    <button class="modal-close-button" onclick="hideModal(event)">
-      <span class="material-icons">close</span>
+    <button class="modal-close-btn" onclick="hideModal(event)">
+      <span class="material-icons icon" style="font-size: var(--modal-close-size); color: var(--modal-close-color);">close</span>
     </button>
   </div>
   <div class="modal-stats">
     <div class="modal-stat">
-      <div class="value">$${v.price}</div>
-      <div class="label">per person</div>
+      <div class="text-stat">$${v.price}</div>
+      <div class="text-caption">per person</div>
     </div>
     <div class="modal-stat">
-      <div class="value">${v.duration}min</div>
-      <div class="label">session</div>
+      <div class="text-stat">${v.duration}min</div>
+      <div class="text-caption">session</div>
     </div>
     <div class="modal-stat">
-      <div class="value">${v.cuisine || ''}</div>
-      <div class="label">cuisine</div>
+      <div class="text-stat cuisine-truncate" title="${v.cuisine || ''}">${v.cuisine || ''}</div>
+      <div class="text-caption">cuisine</div>
     </div>
   </div>
   <div class="modal-section">
-    <h3>Availability</h3>
-    <div style="display: flex; gap: 16px; align-items: flex-start;">
-      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
-        <div style="font-size: 1rem; color: #666; font-weight: normal; margin-bottom: 4px;">Days</div>
-        ${renderDayCircles(v.days)}
-      </div>
-      <div style="flex: 1; text-align: right; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-        <div style="font-size: 1rem; color: #666; margin-bottom: 8px;">Session Times</div>
-        <div style="display: flex; flex-direction: column; gap: 6px;">
-          ${Array.isArray(v.sessions) ? v.sessions.map(time =>
-            `<div style="background-color: #eee; border-radius: 16px; padding: 0 16px; font-size: 0.9rem; height: 32px; display: flex; align-items: center; justify-content: center; min-width: 90px;">${time}</div>`
-          ).join('') : ''}
-        </div>
-      </div>
-    </div>
+    <h3 class="text-title">Details</h3>
+    <p class="text-body">${v.description || ''}</p>
   </div>
   <div class="modal-section">
-    <h3>Details</h3>
-    <p class="modal-description">${v.description || ''}</p>
+    <h3 class="text-title">Address</h3>
+    <p class="text-body">${v.address || ''}</p>
+  </div>
+  <div class="modal-section">
+    <div class="modal-links">
+      ${v.website ? `<a href="${v.website}" target="_blank">
+        <img src="https://img.icons8.com/ios-filled/50/666666/domain.png" alt="Website" class="icon" />
+        <span class="text-body text-center">Website</span>
+      </a>` : ''}
+      ${v.instagram ? `<a href="${v.instagram}" target="_blank">
+        <img src="https://img.icons8.com/ios-filled/50/666666/instagram-new.png" alt="Instagram" class="icon" />
+        <span class="text-body text-center">Instagram</span>
+      </a>` : ''}
+      ${v.name ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(v.name + ', ' + (v.suburb || ''))}" target="_blank">
+        <img src="https://img.icons8.com/ios-filled/50/666666/marker.png" alt="Google Maps" class="icon" />
+        <span class="text-body text-center">Maps</span>
+      </a>` : ''}
+    </div>
   </div>
 `;
 
