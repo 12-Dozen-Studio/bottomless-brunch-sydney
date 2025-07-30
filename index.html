@@ -451,7 +451,7 @@
     let modalMap;
 
     async function init() {
-      const res = await fetch("brunch_sample_10.json");
+      const res = await fetch("brunch_venue.json");
       venues = await res.json();
 
       map = L.map("map").setView([-33.87, 151.21], 12);
