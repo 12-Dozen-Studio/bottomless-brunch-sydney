@@ -7,9 +7,79 @@ const ICONS = {
   sessions: `<svg class="icon" viewBox="0 0 20 20" aria-label="Sessions" role="img"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="10" r="3" fill="currentColor"/></svg>`,
   address: `<svg class="icon" viewBox="0 0 20 20" aria-label="Address" role="img"><path d="M10 2a6 6 0 0 1 6 6c0 4-6 10-6 10S4 12 4 8a6 6 0 0 1 6-6zm0 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>`,
   website: `<svg class="icon" viewBox="0 0 20 20" aria-label="Website" role="img"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 10h12M10 4a16 16 0 0 1 0 12M10 4a16 16 0 0 0 0 12" stroke="currentColor" stroke-width="2" fill="none"/></svg>`,
-  instagram: `<svg class="icon" viewBox="0 0 20 20" aria-label="Instagram" role="img"><rect x="4" y="4" width="12" height="12" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="10" r="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="14.5" cy="5.5" r="1" fill="currentColor"/></svg>`
+  instagram: `<svg class="icon" viewBox="0 0 20 20" aria-label="Instagram" role="img"><rect x="4" y="4" width="12" height="12" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="10" r="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="14.5" cy="5.5" r="1" fill="currentColor"/></svg>`,
+  maps: `<svg class="icon" viewBox="0 0 20 20" aria-label="Maps" role="img"><path d="M10 2a6 6 0 0 1 6 6c0 4-6 10-6 10S4 12 4 8a6 6 0 0 1 6-6zm0 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>`
 };
 function icon(name) { return ICONS[name] || ''; }
+
+// --- MOBILE DETECTION & TOUCH SUPPORT ---
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+const isChrome = /Chrome/.test(navigator.userAgent);
+
+// Enhanced event handling for mobile
+function addMobileEventListeners(element, events, handler) {
+  events.forEach(event => {
+    element.addEventListener(event, handler, { passive: false });
+  });
+}
+
+// Prevent default touch behavior for interactive elements
+function preventTouchZoom(element) {
+  element.addEventListener('touchstart', (e) => {
+    if (e.touches.length > 1) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+}
+
+// Mobile-specific initialization
+function initMobileSupport() {
+  // Prevent zoom on double tap for interactive elements
+  const interactiveElements = document.querySelectorAll('button, .venue-card, .filter-pill, .save-star');
+  interactiveElements.forEach(element => {
+    preventTouchZoom(element);
+  });
+  
+  // Fix for iOS Safari viewport issues
+  if (isIOS) {
+    // Prevent zoom on input focus
+    const inputs = document.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+      input.addEventListener('focus', () => {
+        setTimeout(() => {
+          input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+      });
+    });
+    
+    // Fix for iOS Safari 100vh issue
+    const setVH = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+    
+    setVH();
+    window.addEventListener('resize', setVH);
+    window.addEventListener('orientationchange', setVH);
+  }
+  
+  // Fix for Chrome on iOS specific issues
+  if (isChrome && isIOS) {
+    // Ensure proper touch event handling
+    document.addEventListener('touchstart', () => {}, { passive: true });
+    document.addEventListener('touchmove', () => {}, { passive: true });
+  }
+  
+  // Prevent pull-to-refresh on mobile
+  if (isMobile) {
+    document.addEventListener('touchmove', (e) => {
+      if (e.target.closest('.slide-panel, .bottom-sheet, .modal')) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+  }
+}
 
 // --- IMAGE UTILS ---
 function getVenueImages(venue) {
@@ -206,58 +276,65 @@ function setupMapExpandShrink() {
     lastScroll = window.scrollY;
   });
 }
-// --- TOP BAR & SLIDE PANELS (Uber Eats Style) ---
+// --- TOP BAR & SLIDE PANELS (Enhanced for Mobile) ---
 function setupTopBar() {
   console.log('Setting up top bar...');
   
-  // Filter pills
+  // Filter pills with enhanced mobile support
   const filterPills = document.querySelectorAll('.filter-pill');
   console.log('Found filter pills:', filterPills.length);
   filterPills.forEach(pill => {
-    pill.addEventListener('click', (e) => {
+    // Add touch event handling
+    addMobileEventListeners(pill, ['click', 'touchstart'], (e) => {
       e.preventDefault();
       e.stopPropagation();
       const filterType = pill.getAttribute('data-filter');
       console.log('Opening filter panel:', filterType);
       openFilterPanel(filterType);
     });
+    
+    // Prevent zoom on double tap
+    preventTouchZoom(pill);
   });
   
-  // Sort button
+  // Sort button with enhanced mobile support
   const sortBtn = document.getElementById('sort-btn');
   if (sortBtn) {
-    sortBtn.addEventListener('click', (e) => {
+    addMobileEventListeners(sortBtn, ['click', 'touchstart'], (e) => {
       e.preventDefault();
       e.stopPropagation();
       console.log('Opening sort panel');
       openSortPanel();
     });
+    preventTouchZoom(sortBtn);
   }
   
-  // Saved button
+  // Saved button with enhanced mobile support
   const savedBtn = document.getElementById('saved-btn');
   if (savedBtn) {
-    savedBtn.addEventListener('click', (e) => {
+    addMobileEventListeners(savedBtn, ['click', 'touchstart'], (e) => {
       e.preventDefault();
       e.stopPropagation();
       console.log('Opening saved panel');
       showSavedPanel();
     });
+    preventTouchZoom(savedBtn);
   }
   
-  // Close buttons
+  // Close buttons with enhanced mobile support
   const closeButtons = document.querySelectorAll('.slide-close');
   console.log('Found close buttons:', closeButtons.length);
   closeButtons.forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    addMobileEventListeners(btn, ['click', 'touchstart'], (e) => {
       e.preventDefault();
       e.stopPropagation();
       console.log('Closing all panels');
       closeAllPanels();
     });
+    preventTouchZoom(btn);
   });
   
-  // Apply buttons for each panel
+  // Apply buttons for each panel with enhanced mobile support
   const applyButtons = {
     'apply-suburb': () => { applyFilters(); closeAllPanels(); },
     'apply-price': () => { applyFilters(); closeAllPanels(); },
@@ -268,11 +345,12 @@ function setupTopBar() {
   Object.entries(applyButtons).forEach(([id, handler]) => {
     const btn = document.getElementById(id);
     if (btn) {
-      btn.addEventListener('click', handler);
+      addMobileEventListeners(btn, ['click', 'touchstart'], handler);
+      preventTouchZoom(btn);
     }
   });
   
-  // Reset buttons for each panel
+  // Reset buttons for each panel with enhanced mobile support
   const resetButtons = {
     'reset-suburb': () => { selectedSuburbs.clear(); renderSuburbPills(); },
     'reset-price': () => { selectedPrices.clear(); renderPricePills(); },
@@ -283,7 +361,8 @@ function setupTopBar() {
   Object.entries(resetButtons).forEach(([id, handler]) => {
     const btn = document.getElementById(id);
     if (btn) {
-      btn.addEventListener('click', handler);
+      addMobileEventListeners(btn, ['click', 'touchstart'], handler);
+      preventTouchZoom(btn);
     }
   });
 }
@@ -309,6 +388,11 @@ function openFilterPanel(filterType) {
     console.log('Found panel, removing hidden class');
     panel.classList.remove('hidden');
     
+    // Prevent background scroll on mobile
+    if (isMobile) {
+      document.body.style.overflow = 'hidden';
+    }
+    
     // Render pills for this filter type
     if (filterType === 'suburb') {
       renderSuburbPills();
@@ -333,6 +417,12 @@ function openSortPanel() {
   if (panel) {
     console.log('Found sort panel, removing hidden class');
     panel.classList.remove('hidden');
+    
+    // Prevent background scroll on mobile
+    if (isMobile) {
+      document.body.style.overflow = 'hidden';
+    }
+    
     updateSortSelection();
   } else {
     console.error('Sort panel not found');
@@ -369,9 +459,14 @@ function showSavedPanel() {
   content.innerHTML = html;
   panel.classList.remove('hidden');
   
-  // Event listeners for saved items
+  // Prevent background scroll on mobile
+  if (isMobile) {
+    document.body.style.overflow = 'hidden';
+  }
+  
+  // Event listeners for saved items with enhanced mobile support
   document.querySelectorAll('.saved-item').forEach(item => {
-    item.addEventListener('click', (e) => {
+    addMobileEventListeners(item, ['click', 'touchstart'], (e) => {
       if (!e.target.classList.contains('saved-item-remove')) {
         const idx = +item.getAttribute('data-venue-index');
         openModal(savedVenues[idx]);
@@ -381,7 +476,7 @@ function showSavedPanel() {
   });
   
   document.querySelectorAll('.saved-item-remove').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    addMobileEventListeners(btn, ['click', 'touchstart'], (e) => {
       e.stopPropagation();
       const idx = +btn.getAttribute('data-index');
       savedVenues.splice(idx, 1);
@@ -397,6 +492,11 @@ function closeAllPanels() {
   });
   // Remove active class from all pills
   document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+  
+  // Restore background scroll on mobile
+  if (isMobile) {
+    document.body.style.overflow = '';
+  }
 }
 function renderSuburbPills() {
   const suburbPills = document.getElementById('suburb-pills');
@@ -407,14 +507,17 @@ function renderSuburbPills() {
     const pill = document.createElement('div');
     pill.className = 'filter-pill' + (selectedSuburbs.has(group) ? ' selected' : '');
     pill.textContent = group;
-    pill.onclick = () => {
+    
+    addMobileEventListeners(pill, ['click', 'touchstart'], () => {
       if (selectedSuburbs.has(group)) {
         selectedSuburbs.delete(group);
       } else {
         selectedSuburbs.add(group);
       }
       pill.classList.toggle('selected');
-    };
+    });
+    
+    preventTouchZoom(pill);
     suburbPills.appendChild(pill);
   });
   
@@ -425,14 +528,17 @@ function renderSuburbPills() {
     const pill = document.createElement('div');
     pill.className = 'filter-pill' + (selectedSuburbs.has('Others') ? ' selected' : '');
     pill.textContent = 'Others';
-    pill.onclick = () => {
+    
+    addMobileEventListeners(pill, ['click', 'touchstart'], () => {
       if (selectedSuburbs.has('Others')) {
         selectedSuburbs.delete('Others');
       } else {
         selectedSuburbs.add('Others');
       }
       pill.classList.toggle('selected');
-    };
+    });
+    
+    preventTouchZoom(pill);
     suburbPills.appendChild(pill);
   }
 }
@@ -443,14 +549,17 @@ function renderPricePills() {
     const pill = document.createElement('div');
     pill.className = 'filter-pill' + (selectedPrices.has(range.label) ? ' selected' : '');
     pill.textContent = range.label;
-    pill.onclick = () => {
+    
+    addMobileEventListeners(pill, ['click', 'touchstart'], () => {
       if (selectedPrices.has(range.label)) {
         selectedPrices.delete(range.label);
       } else {
         selectedPrices.add(range.label);
       }
       pill.classList.toggle('selected');
-    };
+    });
+    
+    preventTouchZoom(pill);
     pricePills.appendChild(pill);
   });
 }
@@ -475,14 +584,17 @@ function renderCuisinePills() {
     const pill = document.createElement('div');
     pill.className = 'filter-pill' + (selectedCuisines.has(cuisine) ? ' selected' : '');
     pill.textContent = cuisine;
-    pill.onclick = () => {
+    
+    addMobileEventListeners(pill, ['click', 'touchstart'], () => {
       if (selectedCuisines.has(cuisine)) {
         selectedCuisines.delete(cuisine);
       } else {
         selectedCuisines.add(cuisine);
       }
       pill.classList.toggle('selected');
-    };
+    });
+    
+    preventTouchZoom(pill);
     cuisinePills.appendChild(pill);
   });
   
@@ -492,14 +604,17 @@ function renderCuisinePills() {
     const pill = document.createElement('div');
     pill.className = 'filter-pill' + (selectedCuisines.has('Others') ? ' selected' : '');
     pill.textContent = 'Others';
-    pill.onclick = () => {
+    
+    addMobileEventListeners(pill, ['click', 'touchstart'], () => {
       if (selectedCuisines.has('Others')) {
         selectedCuisines.delete('Others');
       } else {
         selectedCuisines.add('Others');
       }
       pill.classList.toggle('selected');
-    };
+    });
+    
+    preventTouchZoom(pill);
     cuisinePills.appendChild(pill);
   }
 }
@@ -594,10 +709,21 @@ fetch('brunch_venue.json')
 // --- FILTERS & SEARCH ---
 function setupSearch() {
   const input = document.getElementById('search-input');
-  input.addEventListener('input', e => {
+  
+  // Enhanced event handling for mobile
+  addMobileEventListeners(input, ['input', 'change'], (e) => {
     searchTerm = e.target.value.toLowerCase();
     applyFilters();
   });
+  
+  // Prevent zoom on focus for iOS
+  if (isIOS) {
+    input.addEventListener('focus', () => {
+      setTimeout(() => {
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    });
+  }
 }
 function renderFilterTags() {
   const tagBox = document.getElementById('filter-tags');
@@ -890,11 +1016,29 @@ function renderVenues(venues) {
 function initMainMap() {
   if (mainMapInited) return;
   const mapDiv = document.getElementById('main-map');
-  mainMap = L.map(mapDiv, { zoomControl: false, attributionControl: true });
+  
+  // Enhanced map options for mobile
+  const mapOptions = {
+    zoomControl: false,
+    attributionControl: true,
+    // Improve touch interaction on mobile
+    tap: true,
+    // Prevent zoom on double tap
+    doubleClickZoom: false
+  };
+  
+  mainMap = L.map(mapDiv, mapOptions);
   mainMap.setView([-33.87, 151.21], 12);
+  
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(mainMap);
+  
+  // Add zoom control for mobile
+  L.control.zoom({
+    position: 'bottomright'
+  }).addTo(mainMap);
+  
   mainMapInited = true;
 }
 function updateMainMapMarkers() {
@@ -939,6 +1083,8 @@ function getDistance(lat1, lng1, lat2, lng2) {
 
 // --- MODAL ---
 function openModal(venue) {
+  console.log('Opening modal for venue:', venue.name);
+  
   // Remove any existing bottom sheet and dim overlay
   const existingSheet = document.querySelector('.bottom-sheet');
   const existingDim = document.querySelector('.sheet-dim');
@@ -975,15 +1121,15 @@ function openModal(venue) {
   `;
   document.body.appendChild(sheet);
   
-  // Event listeners
+  // Enhanced event listeners for mobile
   const closeBtn = sheet.querySelector('.sheet-close');
-  closeBtn.addEventListener('click', closeSheet);
-  dim.addEventListener('click', closeSheet);
+  addMobileEventListeners(closeBtn, ['click', 'touchstart'], closeSheet);
+  addMobileEventListeners(dim, ['click', 'touchstart'], closeSheet);
   
-  // Save star functionality
+  // Save star functionality with enhanced mobile support
   const saveStar = sheet.querySelector('.save-star');
   if (saveStar) {
-    saveStar.addEventListener('click', (e) => {
+    addMobileEventListeners(saveStar, ['click', 'touchstart'], (e) => {
       e.stopPropagation();
       toggleSaveVenue(venue);
       saveStar.classList.toggle('saved', isVenueSaved(venue));
@@ -1011,12 +1157,27 @@ function initSheetMap(venue) {
   const mapContainer = document.getElementById('sheet-map');
   if (!mapContainer) return;
   
+  // Enhanced map options for mobile
+  const mapOptions = {
+    zoomControl: false,
+    attributionControl: true,
+    // Improve touch interaction on mobile
+    tap: true,
+    // Prevent zoom on double tap
+    doubleClickZoom: false
+  };
+  
   // Initialize map
-  const map = L.map('sheet-map').setView([venue.lat, venue.lng], 14);
+  const map = L.map('sheet-map', mapOptions).setView([venue.lat, venue.lng], 14);
   window._sheetMap = map;
   
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+  
+  // Add zoom control for mobile
+  L.control.zoom({
+    position: 'bottomright'
   }).addTo(map);
   
   // Add venue marker
@@ -1060,6 +1221,8 @@ fetch('brunch_venue.json')
       setupMapExpandShrink();
       initMainMap();
       setupTopBar();
+      // Initialize mobile support
+      initMobileSupport();
     });
   })
   .catch(() => {
@@ -1170,9 +1333,9 @@ function renderVenues() {
   
   venueList.innerHTML = filteredVenues.map((venue, idx) => renderVenueCard(venue, idx)).join('');
   
-  // Add click listeners to venue cards
+  // Add enhanced click listeners to venue cards
   venueList.querySelectorAll('.venue-card').forEach((card, idx) => {
-    card.addEventListener('click', (e) => {
+    addMobileEventListeners(card, ['click', 'touchstart'], (e) => {
       // Don't open modal if clicking on star
       if (e.target.closest('.save-star')) {
         return;
@@ -1180,11 +1343,14 @@ function renderVenues() {
       console.log('Opening modal for venue:', filteredVenues[idx].name);
       openModal(filteredVenues[idx]);
     });
+    
+    // Prevent zoom on double tap
+    preventTouchZoom(card);
   });
   
-  // Add save star listeners
+  // Add enhanced save star listeners
   venueList.querySelectorAll('.save-star').forEach((star, idx) => {
-    star.addEventListener('click', (e) => {
+    addMobileEventListeners(star, ['click', 'touchstart'], (e) => {
       e.preventDefault();
       e.stopPropagation();
       const venue = filteredVenues[idx];
@@ -1192,5 +1358,8 @@ function renderVenues() {
       toggleSaveVenue(venue);
       star.classList.toggle('saved', isVenueSaved(venue));
     });
+    
+    // Prevent zoom on double tap
+    preventTouchZoom(star);
   });
 }

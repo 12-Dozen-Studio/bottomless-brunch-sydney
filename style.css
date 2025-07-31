@@ -4,7 +4,34 @@ body {
   font-family: system-ui, sans-serif;
   background: #faf9f6;
   color: #222;
+  /* Prevent zoom on input focus on iOS */
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* Prevent horizontal scroll on mobile */
+  overflow-x: hidden;
+  /* Improve touch scrolling */
+  -webkit-overflow-scrolling: touch;
 }
+
+/* Custom viewport height for iOS Safari */
+:root {
+  --vh: 1vh;
+}
+
+/* Mobile-specific viewport fixes */
+@media screen and (max-width: 768px) {
+  body {
+    /* Prevent zoom on input focus */
+    font-size: 16px;
+  }
+  
+  /* Ensure proper viewport handling */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
 .venue-container {
   display: flex;
   flex-direction: column;
@@ -115,7 +142,7 @@ body {
   color: #b85c38;
   font-style: italic;
 }
-/* Modal */
+/* Modal - Enhanced for mobile compatibility */
 .modal {
   position: fixed;
   z-index: 1000;
@@ -125,10 +152,17 @@ body {
   align-items: center;
   justify-content: center;
   transition: opacity 0.2s;
+  /* Ensure modal works on all mobile browsers */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  /* Prevent background scroll on iOS */
+  -webkit-overflow-scrolling: touch;
 }
+
 .modal.hidden {
   display: none;
 }
+
 .modal-content {
   background: #fff;
   border-radius: 1rem;
@@ -139,7 +173,14 @@ body {
   padding: 1.5rem 1rem 1rem 1rem;
   position: relative;
   box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  /* Ensure proper scrolling on mobile */
+  -webkit-overflow-scrolling: touch;
+  /* Prevent text selection issues */
+  -webkit-user-select: none;
+  user-select: none;
 }
+
+/* Enhanced close button for mobile */
 .close-button {
   position: absolute;
   top: 0.5rem;
@@ -150,7 +191,19 @@ body {
   color: #888;
   cursor: pointer;
   z-index: 10;
+  /* Ensure touch target is large enough */
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Prevent text selection */
+  -webkit-user-select: none;
+  user-select: none;
+  /* Improve touch feedback */
+  -webkit-tap-highlight-color: transparent;
 }
+
 .close-button:focus {
   outline: 2px solid #b85c38;
 }
@@ -232,6 +285,11 @@ body {
   border-radius: 0.5rem;
   border: 1px solid #ddd;
   font-size: 1rem;
+  /* Prevent zoom on iOS */
+  font-size: 16px;
+  /* Improve touch interaction */
+  -webkit-appearance: none;
+  appearance: none;
 }
 #sort-row {
   flex: 0 0 auto;
@@ -509,11 +567,24 @@ body {
   user-select: none;
   display: inline-block;
   vertical-align: middle;
+  /* Ensure touch target is large enough */
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Prevent text selection */
+  -webkit-user-select: none;
+  user-select: none;
+  /* Improve touch feedback */
+  -webkit-tap-highlight-color: transparent;
 }
+
 .save-star.saved {
   color: #b85c38;
   text-shadow: 0 2px 8px rgba(184,92,56,0.08);
 }
+
 .venue-card .save-star {
   position: absolute;
   top: 0.7em;
@@ -701,6 +772,11 @@ body {
   font-size: 1rem;
   background: #f8f8f8;
   transition: border-color 0.15s;
+  /* Prevent zoom on iOS */
+  font-size: 16px;
+  /* Improve touch interaction */
+  -webkit-appearance: none;
+  appearance: none;
 }
 #search-input:focus {
   outline: none;
@@ -718,6 +794,15 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  /* Ensure touch target is large enough */
+  min-width: 44px;
+  min-height: 44px;
+  /* Prevent text selection */
+  -webkit-user-select: none;
+  user-select: none;
+  /* Improve touch feedback */
+  -webkit-tap-highlight-color: transparent;
 }
 #saved-btn:active {
   background: #f0f0f0;
@@ -746,6 +831,13 @@ body {
   transition: background 0.12s, border 0.12s;
   white-space: nowrap;
   flex-shrink: 0;
+  /* Ensure touch target is large enough */
+  min-height: 44px;
+  /* Prevent text selection */
+  -webkit-user-select: none;
+  user-select: none;
+  /* Improve touch feedback */
+  -webkit-tap-highlight-color: transparent;
 }
 .filter-pill:active {
   background: #e8e8e8;
@@ -769,11 +861,20 @@ body {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  /* Ensure touch target is large enough */
+  min-width: 44px;
+  min-height: 44px;
+  /* Prevent text selection */
+  -webkit-user-select: none;
+  user-select: none;
+  /* Improve touch feedback */
+  -webkit-tap-highlight-color: transparent;
 }
 #sort-btn:active {
   background: #f0f0f0;
 }
 /* --- Slide-Up Panels (Fixed Centering) --- */
+/* Enhanced slide panels for mobile compatibility */
 .slide-panel {
   position: fixed;
   left: 50%;
@@ -786,23 +887,42 @@ body {
   max-width: 90vw;
   width: 400px;
   max-height: 70vh;
+  max-height: calc(var(--vh, 1vh) * 70);
   display: flex;
   flex-direction: column;
   animation: slideIn 0.25s cubic-bezier(.4,1.4,.6,1) both;
   overflow: hidden;
+  /* Ensure proper rendering on mobile */
+  -webkit-transform: translate(-50%, -50%) translateZ(0);
+  transform: translate(-50%, -50%) translateZ(0);
+  /* Prevent background scroll */
+  -webkit-overflow-scrolling: touch;
 }
+
 @keyframes slideIn {
-  from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
-  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  from { 
+    opacity: 0; 
+    transform: translate(-50%, -50%) scale(0.9) translateZ(0); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translate(-50%, -50%) scale(1) translateZ(0); 
+  }
 }
+
 .slide-panel.hidden {
   display: none;
 }
+
+/* Enhanced slide panel content */
 .slide-panel-content {
   display: flex;
   flex-direction: column;
   height: 100%;
+  /* Ensure proper scrolling */
+  -webkit-overflow-scrolling: touch;
 }
+
 .slide-panel-header {
   display: flex;
   align-items: center;
@@ -810,13 +930,18 @@ body {
   padding: 1.2rem 1.5rem 0.8rem 1.5rem;
   border-bottom: 1px solid #eee;
   flex-shrink: 0;
+  /* Prevent text selection */
+  -webkit-user-select: none;
+  user-select: none;
 }
+
 .slide-panel-header h2 {
   font-size: 1.3rem;
   font-weight: 600;
   margin: 0;
   color: #222;
 }
+
 .slide-close {
   background: none;
   border: none;
@@ -826,16 +951,32 @@ body {
   padding: 0.2rem 0.5rem;
   border-radius: 0.5rem;
   transition: background 0.12s;
+  /* Ensure touch target is large enough */
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Prevent text selection */
+  -webkit-user-select: none;
+  user-select: none;
+  /* Improve touch feedback */
+  -webkit-tap-highlight-color: transparent;
 }
+
 .slide-close:hover {
   background: #f3f3f3;
 }
+
 .slide-panel-body {
   flex: 1 1 auto;
   overflow-y: auto;
   padding: 1.2rem 1.5rem;
   min-height: 0;
+  /* Ensure proper scrolling on mobile */
+  -webkit-overflow-scrolling: touch;
 }
+
 .slide-panel-footer {
   display: flex;
   gap: 0.8rem;
@@ -844,6 +985,7 @@ body {
   background: #faf9f6;
   flex-shrink: 0;
 }
+
 .slide-panel-footer button {
   flex: 1 1 0;
   padding: 0.8rem 1.2rem;
@@ -852,7 +994,15 @@ body {
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
+  /* Ensure touch target is large enough */
+  min-height: 44px;
+  /* Prevent text selection */
+  -webkit-user-select: none;
+  user-select: none;
+  /* Improve touch feedback */
+  -webkit-tap-highlight-color: transparent;
 }
+
 .slide-panel-footer button:first-child {
   background: #fff;
   border: 1.5px solid #ddd;
@@ -1523,5 +1673,737 @@ body {
   .sort-option {
     padding: 0.5rem 0.6rem;
     font-size: 0.95rem;
+  }
+}
+
+/* Enhanced mobile responsiveness */
+@media (max-width: 600px) {
+  .venue-container {
+    padding: 0.5rem;
+    gap: 0.8rem;
+  }
+  
+  .venue-card {
+    border-radius: 0.6rem;
+    /* Ensure proper touch targets */
+    min-height: 60px;
+  }
+  
+  .venue-name {
+    font-size: 1.1rem;
+  }
+  
+  .venue-meta {
+    font-size: 0.9rem;
+  }
+  
+  .package-item {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.95rem;
+  }
+  
+  /* Enhanced slide panels for mobile */
+  .slide-panel {
+    width: 95vw;
+    max-height: 75vh;
+    /* Ensure proper positioning on mobile */
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) translateZ(0);
+  }
+  
+  .slide-panel-header {
+    padding: 1rem 1.2rem 0.6rem 1.2rem;
+  }
+  
+  .slide-panel-header h2 {
+    font-size: 1.2rem;
+  }
+  
+  .slide-panel-body {
+    padding: 1rem 1.2rem;
+  }
+  
+  .slide-panel-footer {
+    padding: 0.8rem 1.2rem 1.2rem 1.2rem;
+  }
+  
+  .filter-pills {
+    max-height: 250px;
+  }
+  
+  .filter-pills .filter-pill {
+    font-size: 0.85rem;
+    padding: 0.3rem 0.6rem;
+    /* Ensure touch targets */
+    min-height: 44px;
+  }
+  
+  .sort-option {
+    padding: 0.6rem 0.8rem;
+    /* Ensure touch targets */
+    min-height: 44px;
+  }
+  
+  /* Enhanced top bar for mobile */
+  #top-bar {
+    padding: 0.6rem 0.8rem 0.8rem 0.8rem;
+  }
+  
+  .top-row-1 {
+    margin-bottom: 0.8rem;
+  }
+  
+  .top-row-2 {
+    gap: 0.4rem;
+  }
+  
+  .filter-pill {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+    /* Ensure touch targets */
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 375px) {
+  .venue-container {
+    padding: 0.4rem;
+    gap: 0.6rem;
+  }
+  
+  .venue-card {
+    border-radius: 0.5rem;
+    /* Ensure proper touch targets */
+    min-height: 50px;
+  }
+  
+  .venue-name {
+    font-size: 1rem;
+  }
+  
+  .venue-meta {
+    font-size: 0.85rem;
+  }
+  
+  .package-item {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.9rem;
+  }
+  
+  /* Enhanced slide panels for small mobile */
+  .slide-panel {
+    width: 98vw;
+    max-height: 80vh;
+  }
+  
+  .slide-panel-header {
+    padding: 0.8rem 1rem 0.5rem 1rem;
+  }
+  
+  .slide-panel-header h2 {
+    font-size: 1.1rem;
+  }
+  
+  .slide-panel-body {
+    padding: 0.8rem 1rem;
+  }
+  
+  .slide-panel-footer {
+    padding: 0.6rem 1rem 1rem 1rem;
+  }
+  
+  .filter-pills {
+    max-height: 200px;
+  }
+  
+  .filter-pills .filter-pill {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    /* Ensure touch targets */
+    min-height: 44px;
+  }
+  
+  .sort-option {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.95rem;
+    /* Ensure touch targets */
+    min-height: 44px;
+  }
+  
+  /* Enhanced top bar for small mobile */
+  #top-bar {
+    padding: 0.5rem 0.6rem 0.6rem 0.6rem;
+  }
+  
+  .top-row-1 {
+    margin-bottom: 0.6rem;
+  }
+  
+  .top-row-2 {
+    gap: 0.3rem;
+  }
+  
+  .filter-pill {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.8rem;
+    /* Ensure touch targets */
+    min-height: 44px;
+  }
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  /* iOS Safari specific styles */
+  body {
+    /* Prevent zoom on input focus */
+    font-size: 16px;
+  }
+  
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+  
+  /* Ensure proper modal positioning on iOS */
+  .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* Use transform for better performance */
+    transform: translateZ(0);
+  }
+  
+  .slide-panel {
+    /* Ensure proper positioning on iOS */
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) translateZ(0);
+  }
+  
+  /* Improve touch scrolling on iOS */
+  .slide-panel-body,
+  .modal-content {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Chrome on iOS specific fixes */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  /* Chrome specific styles */
+  .modal {
+    /* Ensure proper z-index stacking */
+    z-index: 1000;
+  }
+  
+  .slide-panel {
+    /* Ensure proper z-index stacking */
+    z-index: 2000;
+  }
+  
+  /* Improve button touch feedback */
+  button {
+    -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+  }
+}
+
+/* --- Bottom Sheet Modal (Enhanced for Mobile) --- */
+.sheet-dim {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1500;
+  /* Ensure proper rendering on mobile */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+.bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-radius: 1rem 1rem 0 0;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 1600;
+  max-height: 85vh;
+  max-height: calc(var(--vh, 1vh) * 85);
+  overflow-y: auto;
+  /* Ensure proper rendering on mobile */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  /* Improve touch scrolling */
+  -webkit-overflow-scrolling: touch;
+  /* Prevent text selection */
+  -webkit-user-select: none;
+  user-select: none;
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%) translateZ(0);
+  }
+  to {
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+.sheet-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #888;
+  cursor: pointer;
+  z-index: 10;
+  /* Ensure touch target is large enough */
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Prevent text selection */
+  -webkit-user-select: none;
+  user-select: none;
+  /* Improve touch feedback */
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sheet-content {
+  padding: 2rem 1.5rem 1.5rem 1.5rem;
+  /* Ensure proper scrolling */
+  -webkit-overflow-scrolling: touch;
+}
+
+.sheet-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #222;
+}
+
+.sheet-suburb {
+  font-size: 1rem;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.sheet-carousel {
+  margin-bottom: 1.5rem;
+  border-radius: 0.8rem;
+  overflow: hidden;
+  background: #f3f3f3;
+}
+
+.sheet-carousel img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.sheet-packages {
+  margin-bottom: 1.5rem;
+}
+
+.sheet-package {
+  background: #f8f8f8;
+  border-radius: 0.8rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.sheet-package:last-child {
+  margin-bottom: 0;
+}
+
+.sheet-package .package-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.8rem;
+}
+
+.sheet-package .package-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #222;
+  margin: 0;
+  flex: 1 1 0;
+}
+
+.sheet-package .package-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-shrink: 0;
+}
+
+.sheet-package .package-price {
+  font-weight: 600;
+  color: #b85c38;
+  font-size: 1rem;
+}
+
+.sheet-package .package-duration {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.sheet-package .package-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.sheet-package .package-days {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.sheet-day-btn {
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid #ddd;
+  background: #f3f3f3;
+  color: #666;
+  border-radius: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: default;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Prevent text selection */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.sheet-day-btn.active {
+  background: #b85c38;
+  border-color: #b85c38;
+  color: #fff;
+}
+
+.sheet-day-btn.disabled {
+  background: #f8f8f8;
+  border-color: #eee;
+  color: #ccc;
+}
+
+.sheet-package .package-sessions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.sheet-session {
+  background: #f0f0f0;
+  color: #666;
+  padding: 0.3rem 0.6rem;
+  border-radius: 1rem;
+  font-size: 0.85rem;
+}
+
+.sheet-package .package-description {
+  font-size: 0.9rem;
+  color: #666;
+  line-height: 1.4;
+}
+
+.sheet-map {
+  width: 100%;
+  height: 180px;
+  margin: 1rem 0 1.5rem 0;
+  border-radius: 0.8rem;
+  background: #f3f3f3;
+  overflow: hidden;
+}
+
+.sheet-links {
+  display: flex;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.sheet-link-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.2rem;
+  border-radius: 0.8rem;
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.15s;
+  /* Ensure touch target is large enough */
+  min-height: 44px;
+  /* Prevent text selection */
+  -webkit-user-select: none;
+  user-select: none;
+  /* Improve touch feedback */
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sheet-link-btn.active {
+  background: #b85c38;
+  color: #fff;
+}
+
+.sheet-link-btn:not(.active) {
+  background: #f0f0f0;
+  color: #666;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.sheet-link-btn.active:active {
+  background: #a04a2c;
+}
+
+.sheet-link-btn svg {
+  width: 1.2em;
+  height: 1.2em;
+}
+
+/* Mobile responsiveness for bottom sheet */
+@media (max-width: 600px) {
+  .bottom-sheet {
+    max-height: 90vh;
+    max-height: calc(var(--vh, 1vh) * 90);
+  }
+  
+  .sheet-content {
+    padding: 1.5rem 1rem 1rem 1rem;
+  }
+  
+  .sheet-title {
+    font-size: 1.3rem;
+  }
+  
+  .sheet-suburb {
+    font-size: 0.95rem;
+  }
+  
+  .sheet-carousel img {
+    height: 160px;
+  }
+  
+  .sheet-package {
+    padding: 0.8rem;
+  }
+  
+  .sheet-package .package-name {
+    font-size: 1rem;
+  }
+  
+  .sheet-day-btn {
+    width: 1.8rem;
+    height: 1.8rem;
+    font-size: 0.75rem;
+  }
+  
+  .sheet-link-btn {
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 375px) {
+  .bottom-sheet {
+    max-height: 95vh;
+    max-height: calc(var(--vh, 1vh) * 95);
+  }
+  
+  .sheet-content {
+    padding: 1.2rem 0.8rem 0.8rem 0.8rem;
+  }
+  
+  .sheet-title {
+    font-size: 1.2rem;
+  }
+  
+  .sheet-suburb {
+    font-size: 0.9rem;
+  }
+  
+  .sheet-carousel img {
+    height: 140px;
+  }
+  
+  .sheet-package {
+    padding: 0.6rem;
+  }
+  
+  .sheet-package .package-name {
+    font-size: 0.95rem;
+  }
+  
+  .sheet-day-btn {
+    width: 1.6rem;
+    height: 1.6rem;
+    font-size: 0.7rem;
+  }
+  
+  .sheet-link-btn {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* iOS Safari specific fixes for bottom sheet */
+@supports (-webkit-touch-callout: none) {
+  .bottom-sheet {
+    /* Ensure proper positioning on iOS */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    /* Use transform for better performance */
+    transform: translateZ(0);
+  }
+  
+  .sheet-content {
+    /* Improve touch scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Chrome on iOS specific fixes for bottom sheet */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  .bottom-sheet {
+    /* Ensure proper z-index stacking */
+    z-index: 1600;
+  }
+  
+  .sheet-link-btn {
+    /* Improve button touch feedback */
+    -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+  }
+}
+
+/* Enhanced mobile responsiveness for slide panels */
+@media (max-width: 600px) {
+  .slide-panel {
+    width: 95vw;
+    max-height: 75vh;
+    max-height: calc(var(--vh, 1vh) * 75);
+    /* Ensure proper positioning on mobile */
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) translateZ(0);
+  }
+  
+  .slide-panel-header {
+    padding: 1rem 1.2rem 0.6rem 1.2rem;
+  }
+  
+  .slide-panel-header h2 {
+    font-size: 1.2rem;
+  }
+  
+  .slide-panel-body {
+    padding: 1rem 1.2rem;
+  }
+  
+  .slide-panel-footer {
+    padding: 0.8rem 1.2rem 1.2rem 1.2rem;
+  }
+  
+  .filter-pills {
+    max-height: 250px;
+  }
+  
+  .filter-pills .filter-pill {
+    font-size: 0.85rem;
+    padding: 0.3rem 0.6rem;
+    /* Ensure touch targets */
+    min-height: 44px;
+  }
+  
+  .sort-option {
+    padding: 0.6rem 0.8rem;
+    /* Ensure touch targets */
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 375px) {
+  .slide-panel {
+    width: 98vw;
+    max-height: 80vh;
+    max-height: calc(var(--vh, 1vh) * 80);
+  }
+  
+  .slide-panel-header {
+    padding: 0.8rem 1rem 0.5rem 1rem;
+  }
+  
+  .slide-panel-header h2 {
+    font-size: 1.1rem;
+  }
+  
+  .slide-panel-body {
+    padding: 0.8rem 1rem;
+  }
+  
+  .slide-panel-footer {
+    padding: 0.6rem 1rem 1rem 1rem;
+  }
+  
+  .filter-pills {
+    max-height: 200px;
+  }
+  
+  .filter-pills .filter-pill {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    /* Ensure touch targets */
+    min-height: 44px;
+  }
+  
+  .sort-option {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.95rem;
+    /* Ensure touch targets */
+    min-height: 44px;
+  }
+}
+
+/* iOS Safari specific fixes for slide panels */
+@supports (-webkit-touch-callout: none) {
+  .slide-panel {
+    /* Ensure proper positioning on iOS */
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) translateZ(0);
+  }
+  
+  .slide-panel-body {
+    /* Improve touch scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Chrome on iOS specific fixes for slide panels */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  .slide-panel {
+    /* Ensure proper z-index stacking */
+    z-index: 2000;
+  }
+  
+  .slide-panel-footer button {
+    /* Improve button touch feedback */
+    -webkit-tap-highlight-color: rgba(0,0,0,0.1);
   }
 }
