@@ -153,7 +153,7 @@ body {
   background: #faf9f6;
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 50;
 }
 #filter-row-1 {
   display: flex;
@@ -656,5 +656,419 @@ body {
   }
   #saved-panel h2, #email-modal h2 {
     font-size: 1.08rem;
+  }
+}
+/* --- Filter Bar Redesign --- */
+.filter-bar {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0.5rem 0 0.5rem 0;
+  scrollbar-width: thin;
+  position: relative;
+  z-index: 60;
+}
+.filter-btn {
+  background: #fff;
+  border: 1.5px solid #b85c38;
+  color: #b85c38;
+  border-radius: 1.5rem;
+  padding: 0.3rem 1.2rem 0.3rem 1.2rem;
+  font-size: 1.05rem;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+  min-width: 110px;
+  transition: background 0.15s, color 0.15s, border 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.filter-btn.active, .filter-btn:active {
+  background: #b85c38;
+  color: #fff;
+  border: 1.5px solid #b85c38;
+}
+.filter-btn .count-badge {
+  background: #b85c38;
+  color: #fff;
+  border-radius: 1em;
+  font-size: 0.95em;
+  padding: 0.1em 0.6em;
+  margin-left: 0.5em;
+  font-weight: 600;
+}
+.filter-dropdown {
+  position: absolute;
+  left: 0;
+  top: 110%;
+  min-width: 220px;
+  background: #fff;
+  border-radius: 1em;
+  box-shadow: 0 4px 24px 0 rgba(0,0,0,0.10), 0 1.5px 6px 0 rgba(0,0,0,0.06);
+  border: 1px solid #eee;
+  z-index: 1000;
+  padding: 0.5em 0.5em 0.5em 0.5em;
+  max-height: 320px;
+  overflow-y: auto;
+  animation: dropdownIn 0.18s cubic-bezier(.4,1.4,.6,1) both;
+}
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.filter-group-label {
+  font-size: 0.98em;
+  color: #b85c38;
+  font-weight: 600;
+  margin: 0.7em 0 0.2em 0.2em;
+  padding-top: 0.2em;
+}
+.filter-checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+}
+.filter-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  font-size: 1em;
+  padding: 0.2em 0.2em;
+  border-radius: 0.5em;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.filter-checkbox input[type="checkbox"] {
+  accent-color: #b85c38;
+  width: 1.1em;
+  height: 1.1em;
+}
+.filter-checkbox.selected {
+  background: #fbeee7;
+}
+.filter-reset {
+  display: flex;
+  align-items: center;
+  color: #b85c38;
+  font-size: 1em;
+  font-weight: 500;
+  cursor: pointer;
+  margin: 0.7em 0 0.1em 0;
+  padding: 0.2em 0.5em;
+  border-radius: 0.5em;
+  transition: background 0.12s;
+}
+.filter-reset:hover {
+  background: #fbeee7;
+}
+@media (max-width: 600px) {
+  #controls {
+    padding: 0.5rem 0.5rem 0.5rem 0.5rem;
+  }
+  #view-saved {
+    font-size: 1rem;
+    padding: 0.3rem 1rem 0.3rem 1.5rem;
+  }
+  .filter-bar {
+    gap: 0.3rem;
+    padding: 0.2rem 0 0.2rem 0;
+  }
+  .filter-btn {
+    font-size: 0.95rem;
+    min-width: 85px;
+    padding: 0.3rem 0.6rem 0.3rem 0.6rem;
+  }
+  .filter-dropdown {
+    min-width: 160px;
+    font-size: 0.95em;
+    max-height: 280px;
+  }
+  #filter-row-2 {
+    gap: 0.4rem;
+  }
+  #search-input {
+    font-size: 0.98rem;
+    padding: 0.4rem 0.6rem;
+  }
+  #sort-select {
+    font-size: 0.95rem;
+    padding: 0.3rem 0.8rem 0.3rem 0.5rem;
+  }
+}
+@media (max-width: 375px) {
+  #controls {
+    padding: 0.4rem 0.4rem 0.4rem 0.4rem;
+  }
+  .filter-btn {
+    font-size: 0.9rem;
+    min-width: 80px;
+    padding: 0.25rem 0.5rem 0.25rem 0.5rem;
+  }
+  .filter-dropdown {
+    min-width: 150px;
+    font-size: 0.9em;
+  }
+  #search-input {
+    font-size: 0.95rem;
+  }
+  #sort-select {
+    font-size: 0.9rem;
+  }
+}
+/* --- Modal Bottom Sheet --- */
+.bottom-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  background: #fff;
+  border-top-left-radius: 1.2em;
+  border-top-right-radius: 1.2em;
+  box-shadow: 0 -4px 32px rgba(0,0,0,0.18);
+  max-width: 600px;
+  margin: 0 auto;
+  height: 66vh;
+  min-height: 340px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: sheetIn 0.22s cubic-bezier(.4,1.4,.6,1) both;
+  overflow: hidden;
+}
+@keyframes sheetIn {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: none; }
+}
+.sheet-dim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.32);
+  z-index: 1999;
+  animation: dimIn 0.18s cubic-bezier(.4,1.4,.6,1) both;
+}
+@keyframes dimIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.sheet-close {
+  position: absolute;
+  top: 1.1em;
+  right: 1.1em;
+  background: none;
+  border: none;
+  font-size: 2.1em;
+  color: #b85c38;
+  cursor: pointer;
+  z-index: 10;
+  padding: 0.1em 0.3em;
+  border-radius: 0.7em;
+  transition: background 0.12s;
+}
+.sheet-close:hover {
+  background: #fbeee7;
+}
+.sheet-content {
+  overflow-y: auto;
+  padding: 1.2em 1.2em 1.2em 1.2em;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1em;
+}
+.sheet-title {
+  font-size: 1.25em;
+  font-weight: 700;
+  margin-bottom: 0.1em;
+}
+.sheet-suburb {
+  color: #b85c38;
+  font-size: 1.05em;
+  font-weight: 500;
+  margin-bottom: 0.2em;
+}
+.sheet-carousel {
+  margin: 0.5em 0 0.5em 0;
+}
+.sheet-packages {
+  margin: 0.5em 0 0.5em 0;
+}
+.sheet-days {
+  display: flex;
+  gap: 0.3em;
+  margin-bottom: 0.3em;
+}
+.sheet-day-btn {
+  background: #f3f3f3;
+  border: none;
+  border-radius: 0.7em;
+  padding: 0.3em 0.8em;
+  font-size: 1em;
+  color: #b85c38;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.sheet-day-btn.active {
+  background: #b85c38;
+  color: #fff;
+}
+.sheet-session {
+  font-size: 0.98em;
+  color: #666;
+  margin-bottom: 0.2em;
+}
+.sheet-price {
+  font-size: 1.1em;
+  font-weight: 600;
+  color: #b85c38;
+  margin-bottom: 0.1em;
+}
+.sheet-duration {
+  font-size: 1em;
+  color: #888;
+  margin-bottom: 0.1em;
+}
+.sheet-map {
+  width: 100%;
+  height: 140px;
+  border-radius: 0.7em;
+  margin: 0.7em 0 0.7em 0;
+  background: #f3f3f3;
+}
+.sheet-links {
+  display: flex;
+  gap: 0.7em;
+  margin-top: 0.5em;
+}
+.sheet-link-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  background: #f3f3f3;
+  color: #888;
+  border: none;
+  border-radius: 0.7em;
+  padding: 0.4em 1.1em;
+  font-size: 1em;
+  font-weight: 500;
+  cursor: not-allowed;
+  opacity: 0.7;
+  transition: background 0.12s, color 0.12s;
+}
+.sheet-link-btn.active {
+  color: #b85c38;
+  background: #fff7f2;
+  cursor: pointer;
+  opacity: 1;
+}
+.sheet-link-btn .icon {
+  margin-right: 0.3em;
+}
+/* --- Map Pin Highlight --- */
+.venue-card.highlight {
+  outline: 2.5px solid #b85c38;
+  box-shadow: 0 0 0 4px #fbeee7;
+  z-index: 2;
+}
+@media (max-width: 600px) {
+  .venue-container {
+    padding: 0.5rem;
+    gap: 0.8rem;
+  }
+  .venue-card {
+    border-radius: 0.6rem;
+  }
+  .venue-name {
+    font-size: 1.1rem;
+  }
+  .venue-meta {
+    font-size: 0.9rem;
+  }
+  .package-item {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.95rem;
+  }
+  .bottom-sheet {
+    height: 70vh;
+    min-height: 300px;
+  }
+  .sheet-content {
+    padding: 1rem 1rem 1rem 1rem;
+    gap: 0.8rem;
+  }
+  .sheet-title {
+    font-size: 1.2rem;
+  }
+  .sheet-suburb {
+    font-size: 1rem;
+  }
+  .sheet-days {
+    gap: 0.2rem;
+  }
+  .sheet-day-btn {
+    font-size: 0.9rem;
+    padding: 0.25rem 0.6rem;
+  }
+  .sheet-links {
+    gap: 0.5rem;
+  }
+  .sheet-link-btn {
+    font-size: 0.95rem;
+    padding: 0.3rem 0.8rem;
+  }
+  #map-section {
+    margin-bottom: 0.8rem;
+  }
+  #saved-panel, #email-modal {
+    max-width: 98vw;
+    padding: 1rem 0.5rem 0.5rem 0.5rem;
+  }
+}
+@media (max-width: 375px) {
+  .venue-container {
+    padding: 0.4rem;
+    gap: 0.6rem;
+  }
+  .venue-card {
+    border-radius: 0.5rem;
+  }
+  .venue-name {
+    font-size: 1rem;
+  }
+  .venue-meta {
+    font-size: 0.85rem;
+  }
+  .package-item {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.9rem;
+  }
+  .bottom-sheet {
+    height: 75vh;
+    min-height: 280px;
+  }
+  .sheet-content {
+    padding: 0.8rem 0.8rem 0.8rem 0.8rem;
+    gap: 0.6rem;
+  }
+  .sheet-title {
+    font-size: 1.1rem;
+  }
+  .sheet-suburb {
+    font-size: 0.95rem;
+  }
+  .sheet-day-btn {
+    font-size: 0.85rem;
+    padding: 0.2rem 0.5rem;
+  }
+  .sheet-link-btn {
+    font-size: 0.9rem;
+    padding: 0.25rem 0.6rem;
+  }
+  #map-section {
+    margin-bottom: 0.6rem;
   }
 }

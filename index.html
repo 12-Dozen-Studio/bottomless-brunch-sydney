@@ -10,10 +10,7 @@
 
   <div id="controls">
     <button id="view-saved" type="button" aria-label="View Saved Venues">★ View Saved</button>
-    <div id="filter-row-1">
-      <div id="filter-selects"></div>
-      <button id="clear-filters" type="button" style="display:none">Clear</button>
-    </div>
+    <div class="filter-bar" id="filter-bar"></div>
     <div id="filter-row-2">
       <input id="search-input" type="search" placeholder="Search venues..." autocomplete="off" />
       <div id="sort-row">
@@ -26,7 +23,6 @@
         </select>
       </div>
     </div>
-    <div id="filter-tags"></div>
   </div>
   <div id="map-section" class="map-collapsed">
     <div id="main-map"></div>
@@ -43,17 +39,6 @@
   <div id="email-modal" class="modal hidden">
     <button id="close-email" class="close-button" aria-label="Close">×</button>
     <div id="email-content"></div>
-  </div>
-
-  <!-- Modal container -->
-  <div id="venue-modal" class="modal hidden">
-    <div class="modal-content">
-      <button id="close-modal" class="close-button">×</button>
-      <div id="modal-body">
-        <!-- Filled via JS -->
-        <div id="modal-map"></div>
-      </div>
-    </div>
   </div>
 
   <!-- Leaflet CSS & JS -->
