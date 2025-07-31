@@ -206,6 +206,324 @@ function setupMapExpandShrink() {
     lastScroll = window.scrollY;
   });
 }
+// --- TOP BAR & SLIDE PANELS (Uber Eats Style) ---
+function setupTopBar() {
+  console.log('Setting up top bar...');
+  
+  // Filter pills
+  const filterPills = document.querySelectorAll('.filter-pill');
+  console.log('Found filter pills:', filterPills.length);
+  filterPills.forEach(pill => {
+    pill.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const filterType = pill.getAttribute('data-filter');
+      console.log('Opening filter panel:', filterType);
+      openFilterPanel(filterType);
+    });
+  });
+  
+  // Sort button
+  const sortBtn = document.getElementById('sort-btn');
+  if (sortBtn) {
+    sortBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('Opening sort panel');
+      openSortPanel();
+    });
+  }
+  
+  // Saved button
+  const savedBtn = document.getElementById('saved-btn');
+  if (savedBtn) {
+    savedBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('Opening saved panel');
+      showSavedPanel();
+    });
+  }
+  
+  // Close buttons
+  const closeButtons = document.querySelectorAll('.slide-close');
+  console.log('Found close buttons:', closeButtons.length);
+  closeButtons.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('Closing all panels');
+      closeAllPanels();
+    });
+  });
+  
+  // Apply buttons for each panel
+  const applyButtons = {
+    'apply-suburb': () => { applyFilters(); closeAllPanels(); },
+    'apply-price': () => { applyFilters(); closeAllPanels(); },
+    'apply-cuisine': () => { applyFilters(); closeAllPanels(); },
+    'apply-sort': () => { applyFilters(); closeAllPanels(); }
+  };
+  
+  Object.entries(applyButtons).forEach(([id, handler]) => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      btn.addEventListener('click', handler);
+    }
+  });
+  
+  // Reset buttons for each panel
+  const resetButtons = {
+    'reset-suburb': () => { selectedSuburbs.clear(); renderSuburbPills(); },
+    'reset-price': () => { selectedPrices.clear(); renderPricePills(); },
+    'reset-cuisine': () => { selectedCuisines.clear(); renderCuisinePills(); },
+    'reset-sort': () => { sortBy = 'az'; updateSortSelection(); }
+  };
+  
+  Object.entries(resetButtons).forEach(([id, handler]) => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      btn.addEventListener('click', handler);
+    }
+  });
+}
+
+function openFilterPanel(filterType) {
+  console.log('Opening filter panel for:', filterType);
+  
+  // Close any open panels first
+  closeAllPanels();
+  
+  // Remove active class from all pills
+  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+  
+  // Add active class to clicked pill
+  const clickedPill = document.querySelector(`[data-filter="${filterType}"]`);
+  if (clickedPill) {
+    clickedPill.classList.add('active');
+  }
+  
+  // Show appropriate panel
+  const panel = document.getElementById(`${filterType}-panel`);
+  if (panel) {
+    console.log('Found panel, removing hidden class');
+    panel.classList.remove('hidden');
+    
+    // Render pills for this filter type
+    if (filterType === 'suburb') {
+      renderSuburbPills();
+    } else if (filterType === 'price') {
+      renderPricePills();
+    } else if (filterType === 'cuisine') {
+      renderCuisinePills();
+    }
+  } else {
+    console.error('Panel not found:', `${filterType}-panel`);
+  }
+}
+
+function openSortPanel() {
+  console.log('Opening sort panel');
+  
+  // Close any open panels first
+  closeAllPanels();
+  
+  // Show sort panel
+  const panel = document.getElementById('sort-panel');
+  if (panel) {
+    console.log('Found sort panel, removing hidden class');
+    panel.classList.remove('hidden');
+    updateSortSelection();
+  } else {
+    console.error('Sort panel not found');
+  }
+}
+
+function showSavedPanel() {
+  loadSavedVenues();
+  const panel = document.getElementById('saved-panel');
+  const content = document.getElementById('saved-content');
+  let html = '';
+  
+  if (!hasSeenSavedInfo) {
+    html += `<div class="info-msg">Your saved list is stored locally in this browser only and may be cleared if you change devices or browsers.</div>`;
+    hasSeenSavedInfo = true;
+    localStorage.setItem('brunch_seen_saved_info', '1');
+  }
+  
+  if (!savedVenues.length) {
+    html += `<div class="empty-msg">No venues saved yet.</div>`;
+  } else {
+    html += savedVenues.map((venue, i) => `
+      <div class="saved-item" data-venue-index="${i}">
+        <img src="${getVenueMainImage(venue)}" alt="${venue.name} image" />
+        <div class="saved-item-info">
+          <div class="saved-item-name">${venue.name}</div>
+          <div class="saved-item-suburb">${venue.suburb || ''}</div>
+        </div>
+        <button class="saved-item-remove" data-index="${i}">×</button>
+      </div>
+    `).join('');
+  }
+  
+  content.innerHTML = html;
+  panel.classList.remove('hidden');
+  
+  // Event listeners for saved items
+  document.querySelectorAll('.saved-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      if (!e.target.classList.contains('saved-item-remove')) {
+        const idx = +item.getAttribute('data-venue-index');
+        openModal(savedVenues[idx]);
+        closeAllPanels();
+      }
+    });
+  });
+  
+  document.querySelectorAll('.saved-item-remove').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = +btn.getAttribute('data-index');
+      savedVenues.splice(idx, 1);
+      saveSavedVenues();
+      showSavedPanel();
+    });
+  });
+}
+function closeAllPanels() {
+  console.log('Closing all panels');
+  document.querySelectorAll('.slide-panel').forEach(panel => {
+    panel.classList.add('hidden');
+  });
+  // Remove active class from all pills
+  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+}
+function renderSuburbPills() {
+  const suburbPills = document.getElementById('suburb-pills');
+  suburbPills.innerHTML = '';
+  
+  // Show only group names, not individual suburbs
+  Object.keys(suburbGroups).forEach(group => {
+    const pill = document.createElement('div');
+    pill.className = 'filter-pill' + (selectedSuburbs.has(group) ? ' selected' : '');
+    pill.textContent = group;
+    pill.onclick = () => {
+      if (selectedSuburbs.has(group)) {
+        selectedSuburbs.delete(group);
+      } else {
+        selectedSuburbs.add(group);
+      }
+      pill.classList.toggle('selected');
+    };
+    suburbPills.appendChild(pill);
+  });
+  
+  // Add "Others" for suburbs not in groups
+  const groupSuburbs = Object.values(suburbGroups).flat();
+  const other = allSuburbs.filter(s => !groupSuburbs.includes(s));
+  if (other.length) {
+    const pill = document.createElement('div');
+    pill.className = 'filter-pill' + (selectedSuburbs.has('Others') ? ' selected' : '');
+    pill.textContent = 'Others';
+    pill.onclick = () => {
+      if (selectedSuburbs.has('Others')) {
+        selectedSuburbs.delete('Others');
+      } else {
+        selectedSuburbs.add('Others');
+      }
+      pill.classList.toggle('selected');
+    };
+    suburbPills.appendChild(pill);
+  }
+}
+function renderPricePills() {
+  const pricePills = document.getElementById('price-pills');
+  pricePills.innerHTML = '';
+  priceRanges.forEach(range => {
+    const pill = document.createElement('div');
+    pill.className = 'filter-pill' + (selectedPrices.has(range.label) ? ' selected' : '');
+    pill.textContent = range.label;
+    pill.onclick = () => {
+      if (selectedPrices.has(range.label)) {
+        selectedPrices.delete(range.label);
+      } else {
+        selectedPrices.add(range.label);
+      }
+      pill.classList.toggle('selected');
+    };
+    pricePills.appendChild(pill);
+  });
+}
+function renderCuisinePills() {
+  const cuisinePills = document.getElementById('cuisine-pills');
+  cuisinePills.innerHTML = '';
+  
+  // Define main cuisine categories
+  const mainCuisines = [
+    'Modern Australian',
+    'Japanese',
+    'Italian',
+    'Mexican',
+    'French',
+    'Middle Eastern',
+    'Mediterranean',
+    'Indian'
+  ];
+  
+  // Show main cuisines
+  mainCuisines.forEach(cuisine => {
+    const pill = document.createElement('div');
+    pill.className = 'filter-pill' + (selectedCuisines.has(cuisine) ? ' selected' : '');
+    pill.textContent = cuisine;
+    pill.onclick = () => {
+      if (selectedCuisines.has(cuisine)) {
+        selectedCuisines.delete(cuisine);
+      } else {
+        selectedCuisines.add(cuisine);
+      }
+      pill.classList.toggle('selected');
+    };
+    cuisinePills.appendChild(pill);
+  });
+  
+  // Add "Others" for cuisines not in main list
+  const otherCuisines = cuisineList.filter(c => !mainCuisines.includes(c));
+  if (otherCuisines.length) {
+    const pill = document.createElement('div');
+    pill.className = 'filter-pill' + (selectedCuisines.has('Others') ? ' selected' : '');
+    pill.textContent = 'Others';
+    pill.onclick = () => {
+      if (selectedCuisines.has('Others')) {
+        selectedCuisines.delete('Others');
+      } else {
+        selectedCuisines.add('Others');
+      }
+      pill.classList.toggle('selected');
+    };
+    cuisinePills.appendChild(pill);
+  }
+}
+function updateSortSelection() {
+  const radio = document.querySelector(`input[name="sort"][value="${sortBy}"]`);
+  if (radio) radio.checked = true;
+  // Add event listeners
+  document.querySelectorAll('input[name="sort"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      sortBy = e.target.value;
+    });
+  });
+}
+function applyFiltersFromPanel() {
+  applyFilters();
+}
+function resetAllFilters() {
+  selectedSuburbs.clear();
+  selectedPrices.clear();
+  selectedCuisines.clear();
+  sortBy = 'az';
+  renderFilterPills();
+  updateSortSelection();
+}
 // --- INIT ---
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('sort-select').addEventListener('change', e => {
@@ -262,12 +580,11 @@ fetch('brunch_venue.json')
       { label: '>$100', min: 100.01, max: Infinity }
     ];
     loadSuburbGroups().then(() => {
-      renderFilterBar();
       applyFilters();
       setupSearch();
       setupMapExpandShrink();
       initMainMap();
-      updateFilterUI();
+      setupTopBar();
     });
   })
   .catch(() => {
@@ -313,41 +630,57 @@ function renderFilterTags() {
   });
 }
 function applyFilters() {
+  const searchTerm = document.getElementById('search-input').value.toLowerCase();
+  
   filteredVenues = allVenues.filter(venue => {
-    // Suburb
-    const matchesSuburb = !selectedSuburbs.size || selectedSuburbs.has(venue.suburb);
-    // Price
-    const minPrice = getVenueMinPrice(venue);
-    const matchesPrice = !selectedPrices.size ||
-      Array.from(selectedPrices).some(label => {
-        const r = priceRanges.find(r=>r.label===label);
-        return r && minPrice >= r.min && minPrice <= r.max;
-      });
-    // Cuisine
-    const matchesCuisine = !selectedCuisines.size ||
-      getVenueCuisines(venue).some(c => selectedCuisines.has(c));
-    // Search
-    const matchesSearch = !searchTerm ||
+    // Search filter
+    const matchesSearch = !searchTerm || 
       venue.name.toLowerCase().includes(searchTerm) ||
-      (venue.suburb||'').toLowerCase().includes(searchTerm) ||
-      (venue.cuisine||'').toLowerCase().includes(searchTerm);
-    return matchesSuburb && matchesPrice && matchesCuisine && matchesSearch;
+      (venue.suburb && venue.suburb.toLowerCase().includes(searchTerm)) ||
+      (venue.cuisine && venue.cuisine.toLowerCase().includes(searchTerm));
+    
+    // Suburb filter - check if venue's suburb is in any selected group
+    const matchesSuburb = selectedSuburbs.size === 0 || 
+      selectedSuburbs.has('Others') && !Object.values(suburbGroups).flat().includes(venue.suburb) ||
+      Object.entries(suburbGroups).some(([group, suburbs]) => 
+        selectedSuburbs.has(group) && suburbs.includes(venue.suburb)
+      );
+    
+    // Price filter
+    const matchesPrice = selectedPrices.size === 0 || 
+      venue.packages && venue.packages.some(pkg => {
+        const price = parseFloat(pkg.price);
+        return selectedPrices.has('<$70') && price < 70 ||
+               selectedPrices.has('$70–$100') && price >= 70 && price <= 100 ||
+               selectedPrices.has('>$100') && price > 100;
+      });
+    
+    // Cuisine filter
+    const matchesCuisine = selectedCuisines.size === 0 || 
+      selectedCuisines.has('Others') && !['Modern Australian', 'Japanese', 'Italian', 'Mexican', 'French', 'Middle Eastern', 'Mediterranean', 'Indian'].includes(venue.cuisine) ||
+      selectedCuisines.has(venue.cuisine);
+    
+    return matchesSearch && matchesSuburb && matchesPrice && matchesCuisine;
   });
-  // --- SORTING ---
+  
+  // Sort
   if (sortBy === 'az') {
     filteredVenues.sort((a, b) => a.name.localeCompare(b.name));
   } else if (sortBy === 'price-low') {
-    filteredVenues.sort((a, b) => getVenueMinPrice(a) - getVenueMinPrice(b));
-  } else if (sortBy === 'price-high') {
-    filteredVenues.sort((a, b) => getVenueMinPrice(b) - getVenueMinPrice(a));
-  } else if (sortBy === 'duration') {
     filteredVenues.sort((a, b) => {
-      const aDur = a.packages && a.packages[0] ? a.packages[0].duration : 0;
-      const bDur = b.packages && b.packages[0] ? b.packages[0].duration : 0;
-      return aDur - bDur;
+      const aMinPrice = Math.min(...(a.packages || []).map(p => parseFloat(p.price)));
+      const bMinPrice = Math.min(...(b.packages || []).map(p => parseFloat(p.price)));
+      return aMinPrice - bMinPrice;
+    });
+  } else if (sortBy === 'price-high') {
+    filteredVenues.sort((a, b) => {
+      const aMinPrice = Math.min(...(a.packages || []).map(p => parseFloat(p.price)));
+      const bMinPrice = Math.min(...(b.packages || []).map(p => parseFloat(p.price)));
+      return bMinPrice - aMinPrice;
     });
   }
-  renderVenues(filteredVenues);
+  
+  renderVenues();
   updateMainMapMarkers();
 }
 
@@ -376,8 +709,8 @@ function toggleSaveVenue(venue) {
   renderVenues(filteredVenues);
 }
 function renderSaveStar(venue) {
-  const saved = isVenueSaved(venue);
-  return `<span class="save-star${saved ? ' saved' : ''}" tabindex="0" role="button" aria-label="${saved ? 'Remove from saved' : 'Save venue'}" title="${saved ? 'Remove from saved' : 'Save venue'}">★</span>`;
+  const isSaved = isVenueSaved(venue);
+  return `<button class="save-star ${isSaved ? 'saved' : ''}" aria-label="${isSaved ? 'Remove from saved' : 'Save venue'}">★</button>`;
 }
 // --- RENDER SAVED PANEL ---
 function showSavedPanel() {
@@ -385,29 +718,51 @@ function showSavedPanel() {
   const panel = document.getElementById('saved-panel');
   const content = document.getElementById('saved-content');
   let html = `<h2>Saved Venues</h2>`;
+  
   if (!hasSeenSavedInfo) {
     html += `<div class="info-msg">Your saved list is stored locally in this browser only and may be cleared if you change devices or browsers.</div>`;
     hasSeenSavedInfo = true;
     localStorage.setItem('brunch_seen_saved_info', '1');
   }
+  
   if (!savedVenues.length) {
     html += `<div class="empty-msg">No venues saved yet.</div>`;
   } else {
-    html += `<div id="saved-list">` + savedVenues.map((venue, i) => `
-      <div class="saved-card">
+    html += savedVenues.map((venue, i) => `
+      <div class="saved-item" data-venue-index="${i}">
         <img src="${getVenueMainImage(venue)}" alt="${venue.name} image" />
-        <div>
-          <div><strong>${venue.name}</strong></div>
-          <div style="font-size:0.97em;color:#666;">${venue.suburb || ''}</div>
+        <div class="saved-item-info">
+          <div class="saved-item-name">${venue.name}</div>
+          <div class="saved-item-suburb">${venue.suburb || ''}</div>
         </div>
-        <button class="remove-saved" aria-label="Remove from saved" data-index="${i}">×</button>
+        <button class="saved-item-remove" data-index="${i}">×</button>
       </div>
-    `).join('') + `</div>`;
-    html += `<button id="send-list-btn">Send My List</button>`;
+    `).join('');
   }
+  
   content.innerHTML = html;
   panel.classList.remove('hidden');
-  panel.classList.add('active');
+  
+  // Event listeners for saved items
+  document.querySelectorAll('.saved-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      if (!e.target.classList.contains('saved-item-remove')) {
+        const idx = +item.getAttribute('data-venue-index');
+        openModal(savedVenues[idx]);
+        closeAllPanels();
+      }
+    });
+  });
+  
+  document.querySelectorAll('.saved-item-remove').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = +btn.getAttribute('data-index');
+      savedVenues.splice(idx, 1);
+      saveSavedVenues();
+      showSavedPanel();
+    });
+  });
 }
 function hideSavedPanel() {
   const panel = document.getElementById('saved-panel');
@@ -584,97 +939,258 @@ function getDistance(lat1, lng1, lat2, lng2) {
 
 // --- MODAL ---
 function openModal(venue) {
-  // Remove old modal if present
-  let oldSheet = document.getElementById('venue-bottom-sheet');
-  if (oldSheet) oldSheet.remove();
-  let oldDim = document.getElementById('sheet-dim');
-  if (oldDim) oldDim.remove();
-  // Dimmed bg
+  // Remove any existing bottom sheet and dim overlay
+  const existingSheet = document.querySelector('.bottom-sheet');
+  const existingDim = document.querySelector('.sheet-dim');
+  if (existingSheet) existingSheet.remove();
+  if (existingDim) existingDim.remove();
+  
+  // Create dim overlay
   const dim = document.createElement('div');
   dim.className = 'sheet-dim';
-  dim.id = 'sheet-dim';
   document.body.appendChild(dim);
-  // Sheet
+  
+  // Create bottom sheet
   const sheet = document.createElement('div');
   sheet.className = 'bottom-sheet';
-  sheet.id = 'venue-bottom-sheet';
   sheet.innerHTML = `
     <button class="sheet-close" aria-label="Close">×</button>
     <div class="sheet-content">
       <div class="sheet-title">${venue.name}</div>
       <div class="sheet-suburb">${venue.suburb || ''}</div>
-      <div class="sheet-carousel modal-gallery">${getVenueImages(venue).slice(0,3).map(img => `<img src="${img}" alt="${venue.name} photo" loading="lazy" />`).join('')}</div>
+      <div class="sheet-carousel">
+        <img src="${getVenueMainImage(venue)}" alt="${venue.name}" />
+      </div>
       <div class="sheet-packages">
-        ${venue.packages && venue.packages.length ? renderSheetPackages(venue.packages) : '<span class="no-packages">No packages available</span>'}
+        ${renderSheetPackages(venue.packages || [])}
       </div>
       <div class="sheet-map" id="sheet-map"></div>
       <div class="sheet-links">
-        ${renderSheetLinkBtn('website', venue.website, 'Website', icon('website'))}
-        ${renderSheetLinkBtn('instagram', venue.instagram, 'Instagram', icon('instagram'))}
-        ${renderSheetLinkBtn('googlemaps', venue.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venue.address)}` : '', 'Google Maps', icon('address'))}
+        ${renderSheetLinkBtn('website', venue.website, 'Website', ICONS.website)}
+        ${renderSheetLinkBtn('instagram', venue.instagram, 'Instagram', ICONS.instagram)}
+        ${renderSheetLinkBtn('maps', venue.lat && venue.lng ? `https://maps.google.com/?q=${venue.lat},${venue.lng}` : null, 'Google Maps', ICONS.maps)}
       </div>
+      ${renderSaveStar(venue)}
     </div>
   `;
   document.body.appendChild(sheet);
-  // Close logic
-  function closeSheet() {
-    sheet.remove();
-    dim.remove();
-    document.body.style.overflow = '';
+  
+  // Event listeners
+  const closeBtn = sheet.querySelector('.sheet-close');
+  closeBtn.addEventListener('click', closeSheet);
+  dim.addEventListener('click', closeSheet);
+  
+  // Save star functionality
+  const saveStar = sheet.querySelector('.save-star');
+  if (saveStar) {
+    saveStar.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleSaveVenue(venue);
+      saveStar.classList.toggle('saved', isVenueSaved(venue));
+    });
   }
-  sheet.querySelector('.sheet-close').onclick = closeSheet;
-  dim.onclick = closeSheet;
+  
+  // Disable background scroll
   document.body.style.overflow = 'hidden';
-  // Embedded map
-  setTimeout(()=>initSheetMap(venue), 100);
+  
+  // Initialize map after a short delay
+  setTimeout(() => {
+    initSheetMap(venue);
+  }, 100);
 }
-function renderSheetPackages(packages) {
-  // Render day buttons, session times, price/duration for each package
-  return packages.map(pkg => {
-    const days = pkg.days && pkg.days.length ? pkg.days : [];
-    const sessions = pkg.sessions && pkg.sessions.length ? pkg.sessions : [];
-    return `
-      <div class="sheet-days">
-        ${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => `<button class="sheet-day-btn${days.map(dayShort).includes(d) ? ' active' : ''}" disabled>${d}</button>`).join('')}
-      </div>
-      <div class="sheet-session">${sessions.length ? sessions.join(', ') : ''}</div>
-      <div class="sheet-price">$${pkg.price}</div>
-      <div class="sheet-duration">${pkg.duration} min</div>
-      <div class="package-description">${pkg.description || ''}</div>
-    `;
-  }).join('');
+
+function closeSheet() {
+  const sheet = document.querySelector('.bottom-sheet');
+  const dim = document.querySelector('.sheet-dim');
+  if (sheet) sheet.remove();
+  if (dim) dim.remove();
+  document.body.style.overflow = '';
 }
-function renderSheetLinkBtn(type, url, label, iconSvg) {
-  const active = !!url;
-  return `<a class="sheet-link-btn${active ? ' active' : ''}" href="${active ? url : '#'}" target="_blank" rel="noopener" ${active ? '' : 'tabindex="-1" aria-disabled="true"'}>${iconSvg}${label}</a>`;
-}
+
 function initSheetMap(venue) {
-  const mapDiv = document.getElementById('sheet-map');
-  if (!mapDiv) return;
-  mapDiv.innerHTML = '';
-  if (window._sheetMap) {
-    window._sheetMap.remove();
-    window._sheetMap = null;
-  }
-  const map = L.map(mapDiv, { zoomControl: false, attributionControl: false });
+  const mapContainer = document.getElementById('sheet-map');
+  if (!mapContainer) return;
+  
+  // Initialize map
+  const map = L.map('sheet-map').setView([venue.lat, venue.lng], 14);
   window._sheetMap = map;
-  map.setView([venue.lat, venue.lng], 15);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-  // Main marker
-  L.marker([venue.lat, venue.lng]).addTo(map).bindPopup(`<b>${venue.name}</b>`).openPopup();
-  // Nearby venues (within ~1km)
-  allVenues.forEach(v => {
-    if (v !== venue && v.lat && v.lng) {
-      const dist = getDistance(venue.lat, venue.lng, v.lat, v.lng);
-      if (dist < 1) {
-        L.circleMarker([v.lat, v.lng], { radius: 6, color: '#bbb' })
-          .addTo(map)
-          .bindPopup(`<b>${v.name}</b><br>${v.suburb}`);
-      }
-    }
+  
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+  
+  // Add venue marker
+  const venueMarker = L.marker([venue.lat, venue.lng]).addTo(map);
+  venueMarker.bindPopup(venue.name);
+  
+  // Add nearby venue markers (grey)
+  const nearbyVenues = getNearbyVenues(venue, 2); // 2km radius
+  nearbyVenues.forEach(nearby => {
+    const marker = L.marker([nearby.lat, nearby.lng], {
+      icon: L.divIcon({
+        className: 'nearby-marker',
+        html: '●',
+        iconSize: [8, 8]
+      })
+    }).addTo(map);
+    marker.setStyle({ color: '#bbb' });
   });
-  setTimeout(()=>map.invalidateSize(), 200);
 }
 
 // --- INIT PATCH ---
 loadSavedVenues();
+
+// --- INITIALIZATION ---
+// Load venues and initialize app
+fetch('brunch_venue.json')
+  .then(res => res.json())
+  .then(data => {
+    allVenues = data;
+    cuisineList = Array.from(new Set(
+      allVenues.flatMap(getVenueCuisines)
+    ));
+    priceRanges = [
+      { label: '<$70', min: 0, max: 69.99 },
+      { label: '$70–$100', min: 70, max: 100 },
+      { label: '>$100', min: 100.01, max: Infinity }
+    ];
+    loadSuburbGroups().then(() => {
+      applyFilters();
+      setupSearch();
+      setupMapExpandShrink();
+      initMainMap();
+      setupTopBar();
+    });
+  })
+  .catch(() => {
+    document.getElementById('venue-list').innerHTML = '<p class="error-msg">Failed to load venues.</p>';
+  });
+
+// Helper functions
+function getNearbyVenues(venue, radiusKm) {
+  return allVenues.filter(v => {
+    if (v === venue || !v.lat || !v.lng) return false;
+    const dist = getDistance(venue.lat, venue.lng, v.lat, v.lng);
+    return dist <= radiusKm;
+  });
+}
+
+function renderSheetPackages(packages) {
+  if (!packages || packages.length === 0) {
+    return '<div class="no-packages">No packages available</div>';
+  }
+  
+  return packages.map(pkg => `
+    <div class="sheet-package">
+      <div class="package-header">
+        <h4 class="package-name">${pkg.name}</h4>
+        <div class="package-meta">
+          <span class="package-price">$${pkg.price}</span>
+          <span class="package-duration">${pkg.duration}</span>
+        </div>
+      </div>
+      <div class="package-details">
+        <div class="package-days">
+          ${['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => `
+            <button class="sheet-day-btn ${pkg.days && pkg.days.includes(i + 1) ? 'active' : 'disabled'}" disabled>
+              ${day}
+            </button>
+          `).join('')}
+        </div>
+        <div class="package-sessions">
+          ${pkg.sessions ? pkg.sessions.map(session => `
+            <span class="sheet-session">${session}</span>
+          `).join('') : ''}
+        </div>
+        ${pkg.description ? `<div class="package-description">${pkg.description}</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderSheetLinkBtn(type, url, label, iconSvg) {
+  const active = !!url;
+  return `<a class="sheet-link-btn${active ? ' active' : ''}" href="${active ? url : '#'}" target="_blank" rel="noopener" ${active ? '' : 'tabindex="-1" aria-disabled="true"'}>${iconSvg}${label}</a>`;
+}
+
+function renderVenueCard(venue, idx) {
+  const packages = venue.packages || [];
+  
+  return `
+    <div class="venue-card" data-index="${idx}">
+      <div class="venue-header">
+        <div class="venue-bg-image">
+          <img src="${getVenueMainImage(venue)}" alt="${venue.name}" loading="lazy" />
+        </div>
+        <div class="venue-overlay">
+          <h3 class="venue-name">${venue.name}</h3>
+          <div class="venue-tags">
+            <span class="venue-tag">${venue.suburb || ''}</span>
+            <span class="venue-tag">${venue.cuisine || ''}</span>
+          </div>
+        </div>
+        ${renderSaveStar(venue)}
+      </div>
+      ${packages.length > 0 ? `
+        <div class="venue-packages">
+          ${packages.map(pkg => `
+            <div class="package-item">
+              <div class="package-header">
+                <h4 class="package-name">${pkg.name}</h4>
+                <div class="package-meta">
+                  <span class="package-price">$${pkg.price} pp</span>
+                  <span class="package-duration">${pkg.duration}</span>
+                </div>
+              </div>
+              <div class="package-details">
+                <div class="package-days">
+                  ${['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => `
+                    <button class="day-btn ${pkg.days && pkg.days.includes(i + 1) ? 'active' : 'disabled'}" disabled>
+                      ${day}
+                    </button>
+                  `).join('')}
+                </div>
+                <div class="package-sessions">
+                  ${pkg.sessions ? pkg.sessions.map(session => `
+                    <span class="session-btn">${session}</span>
+                  `).join('') : ''}
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      ` : '<div class="no-packages">No packages available</div>'}
+    </div>
+  `;
+}
+
+function renderVenues() {
+  const venueList = document.getElementById('venue-list');
+  if (!venueList) return;
+  
+  venueList.innerHTML = filteredVenues.map((venue, idx) => renderVenueCard(venue, idx)).join('');
+  
+  // Add click listeners to venue cards
+  venueList.querySelectorAll('.venue-card').forEach((card, idx) => {
+    card.addEventListener('click', (e) => {
+      // Don't open modal if clicking on star
+      if (e.target.closest('.save-star')) {
+        return;
+      }
+      console.log('Opening modal for venue:', filteredVenues[idx].name);
+      openModal(filteredVenues[idx]);
+    });
+  });
+  
+  // Add save star listeners
+  venueList.querySelectorAll('.save-star').forEach((star, idx) => {
+    star.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const venue = filteredVenues[idx];
+      console.log('Toggling save for venue:', venue.name);
+      toggleSaveVenue(venue);
+      star.classList.toggle('saved', isVenueSaved(venue));
+    });
+  });
+}
