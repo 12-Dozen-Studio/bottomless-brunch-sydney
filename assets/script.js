@@ -251,6 +251,14 @@ function initSearch() {
 }
 
 // ---------- Filtering Logic ----------
+function getPriceBand(price) {
+  if (price >= 45 && price <= 74) return '$';
+  if (price >= 75 && price <= 94) return '$$';
+  if (price >= 95 && price <= 114) return '$$$';
+  if (price >= 115) return '$$$$';
+  return null;
+}
+
 function filterVenues() {
   venueCards.forEach(({ el, index }) => {
     const match = matchesFilters(venuesData[index]);
@@ -282,12 +290,42 @@ function matchesFilters(v) {
         pkg.days && pkg.days.some(d => filters.days.has(d))
       );
   }
-  // Price filter: match if venue.price === filters.price (if set)
+  // Price filter: match if any package falls within selected price band
   let matchPrice = true;
   if (filters.price) {
-    matchPrice = v.price === filters.price;
+    if (v.packages && v.packages.length > 0) {
+      const filteredPkgs = v.packages.filter(pkg => getPriceBand(pkg.price) === filters.price);
+      matchPrice = filteredPkgs.length > 0;
+    } else {
+      matchPrice = false;
+    }
   }
   return matchQuery && matchCuisine && matchSuburb && matchDays && matchPrice;
+}
+// ---------- Price Pill Filter (new for banded price filtering) ----------
+// This should be called after DOM is loaded and filters have been rendered
+function updateFilterVisuals() {
+  document.querySelectorAll('.price-pill').forEach(btn => {
+    const symbol = btn.dataset.symbol;
+    if (filters.price === symbol) {
+      btn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border-red-300');
+    } else {
+      btn.classList.remove('bg-gray-100', 'text-red-600', 'font-semibold', 'border-red-300');
+    }
+  });
+}
+
+// Attach event listeners for price pills after rendering (should be called after pills are in DOM)
+function bindPricePillClicks() {
+  document.querySelectorAll('.price-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const selected = btn.dataset.symbol;
+      filters.price = filters.price === selected ? null : selected;
+      updateFilterVisuals();
+      filterVenues();
+      maybeShowReset();
+    });
+  });
 }
 
 // ---------- Suburb Panel ----------
@@ -399,9 +437,12 @@ function renderSuburbPanel() {
   panel.querySelector('#closeSuburbPanelBtn').addEventListener('click', closeSuburbPanel);
   // Event: reset
   panel.querySelector('#resetSuburbBtn').addEventListener('click', () => {
+    // Uncheck all suburb checkboxes if present in DOM
+    document.querySelectorAll('.suburb-checkbox').forEach(cb => cb.checked = false);
     filters.suburbs.clear();
-    renderSuburbPanelContent(groupsWrap);
     renderFilters();
+    filterVenues(); // Update results immediately
+    closeSuburbPanel(); // Close the suburb panel
   });
   // Event: apply
   panel.querySelector('#applySuburbBtn').addEventListener('click', () => {
@@ -830,11 +871,13 @@ function renderAvailableDayPanel() {
   renderAvailableDayPanelContent(daysWrap);
   // Event: close
   panel.querySelector('#closeAvailableDayPanelBtn').addEventListener('click', closeAvailableDayPanel);
-  // Event: reset (just clears filters.days and re-renders checkboxes, panel remains open)
+  // Event: reset (clear day checkboxes, clear filters, update results, and close panel)
   panel.querySelector('#resetAvailableDayBtn').addEventListener('click', () => {
+    document.querySelectorAll('.day-checkbox').forEach(cb => cb.checked = false);
     filters.days.clear();
-    renderAvailableDayPanelContent(daysWrap);
     renderFilters();
+    filterVenues(); // Update results immediately
+    closeAvailableDayPanel(); // Close the day panel
   });
   // Event: apply
   panel.querySelector('#applyAvailableDayBtn').addEventListener('click', () => {
