@@ -11,7 +11,7 @@
 // ----- Global State -----
 let venuesData = [];
 const favorites = new Set(JSON.parse(localStorage.getItem('favorites') || '[]'));
-const filters = { search: '', cuisine: 'All', suburb: '', days: [] }; // extendable
+const filters = { search: '', cuisines: new Set(), suburb: '', days: [] }; // extendable
 let venueCards = []; // { el, index }
 let lastFocused = null; // element to restore focus after modal close
 let trapListener = null; // focus trap handler
@@ -42,7 +42,6 @@ function getUniqueCuisines(venues) {
 // ---------- Filter Rendering ----------
 function renderFilters() {
   const cuisines = [
-    'All',
     'Australian',
     'Japanese',
     'Italian',
@@ -53,34 +52,92 @@ function renderFilters() {
   ];
   const filterRow = document.getElementById('filterRow');
   filterRow.innerHTML = '';
-  filterRow.className = 'flex flex-row items-center overflow-x-auto whitespace-nowrap no-scrollbar space-x-2 px-2 py-2 bg-white border-b border-gray-200 sticky top-[72px] z-10';
+  filterRow.className = '';
 
+  // Cuisine row (scrollable)
+  const cuisineScroll = document.createElement('div');
+  cuisineScroll.className = 'flex flex-row items-center overflow-x-auto whitespace-nowrap no-scrollbar space-x-2 px-2 py-2';
   cuisines.forEach(cuisine => {
+    const isActive = filters.cuisines.has(cuisine);
     const btn = document.createElement('button');
     btn.className = 'flex flex-col items-center space-y-1 flex-shrink-0 focus:outline-none min-w-[60px]';
     btn.setAttribute('aria-label', `${cuisine} cuisine filter`);
-    btn.setAttribute('aria-pressed', cuisine === filters.cuisine);
+    btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
     btn.innerHTML = `
-      <div class="w-10 h-10 bg-white border border-gray-300 rounded-full flex items-center justify-center shadow-sm">
-        <span class="material-icons text-gray-600">${cuisine === 'All' ? 'apps' : 'restaurant'}</span>
+      <div class="w-10 h-10 bg-gray-100 border border-gray-300 rounded-full flex items-center justify-center shadow-sm">
+        <span class="material-icons ${isActive ? 'text-red-500' : 'text-gray-600'}">restaurant</span>
       </div>
-      <span class="text-[11px] text-gray-700 text-center leading-tight">${cuisine}</span>
+      <span class="text-[11px] ${isActive ? 'text-red-600 font-semibold' : 'text-gray-700'} text-center leading-tight">${cuisine}</span>
     `;
     btn.addEventListener('click', () => {
-      filters.cuisine = cuisine;
-      updateFilterButtons(filterRow, cuisine);
+      // Toggle logic for cuisines set (no "All")
+      if (filters.cuisines.has(cuisine)) {
+        filters.cuisines.delete(cuisine);
+      } else {
+        filters.cuisines.add(cuisine);
+      }
+      // Re-render to update button states
+      renderFilters();
       filterVenues();
+      maybeShowReset();
     });
-    filterRow.appendChild(btn);
+    cuisineScroll.appendChild(btn);
   });
+  filterRow.appendChild(cuisineScroll);
+
+  // Placeholder filter row (scrollable)
+  const placeholderScroll = document.createElement('div');
+  placeholderScroll.className = 'flex flex-row items-center overflow-x-auto whitespace-nowrap no-scrollbar space-x-2 px-2 py-2 mt-1';
+  const placeholders = ['Price', 'Suburb', 'Available Day', 'Sort'];
+  placeholders.forEach(label => {
+    const btn = document.createElement('button');
+    btn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 flex-shrink-0 focus:outline-none';
+    btn.textContent = label;
+    btn.disabled = true; // Placeholder, not functional yet
+    placeholderScroll.appendChild(btn);
+  });
+  // Reset button (conditionally shown)
+  const resetBtn = document.createElement('button');
+  resetBtn.id = 'resetFiltersBtn';
+  resetBtn.className = 'ml-4 px-3 py-1 text-sm text-red-500 border border-red-200 rounded-full flex-shrink-0 hidden';
+  resetBtn.textContent = 'Reset';
+  resetBtn.addEventListener('click', () => {
+    filters.cuisines = new Set();
+    filters.suburb = '';
+    filters.days = [];
+    filters.search = '';
+    document.getElementById('searchInput').value = '';
+    renderFilters();
+    filterVenues();
+    maybeShowReset();
+  });
+  // Container for placeholder row and reset button
+  const placeholderRowWrap = document.createElement('div');
+  placeholderRowWrap.className = 'flex flex-row items-center w-full';
+  placeholderRowWrap.appendChild(placeholderScroll);
+  placeholderRowWrap.appendChild(resetBtn);
+  filterRow.appendChild(placeholderRowWrap);
+
+  // Set filterRow sticky etc classes (outer)
+  filterRow.classList.add('bg-white', 'border-b', 'border-gray-200', 'sticky', 'top-[72px]', 'z-10');
+
+  maybeShowReset();
 }
 
-function updateFilterButtons(container, selected) {
-  container.querySelectorAll('button').forEach(btn => {
-    const isActive = btn.textContent.trim() === selected;
-    btn.setAttribute('aria-pressed', isActive);
-  });
+function maybeShowReset() {
+  // Show Reset button if any filter is active (not default)
+  const resetBtn = document.getElementById('resetFiltersBtn');
+  if (!resetBtn) return;
+  const cuisineActive = filters.cuisines.size > 0;
+  const active =
+    cuisineActive ||
+    (filters.suburb && filters.suburb !== '') ||
+    (filters.days && filters.days.length > 0) ||
+    (filters.search && filters.search.trim() !== '');
+  resetBtn.classList.toggle('hidden', !active);
 }
+
+// No longer used: updateFilterButtons
 
 function initSearch() {
   const input = document.getElementById('searchInput');
@@ -104,7 +161,14 @@ function matchesFilters(v) {
   const q = filters.search;
   const matchQuery =
     !q || v.name.toLowerCase().includes(q) || v.suburb.toLowerCase().includes(q);
-  const matchCuisine = filters.cuisine === 'All' || (v.cuisine && v.cuisine.toLowerCase().includes(filters.cuisine.toLowerCase()));
+  // Cuisine filter: OR logic, match if any selected cuisine is included in v.cuisine (case-insensitive)
+  let matchCuisine = true;
+  if (filters.cuisines.size > 0) {
+    const venueCuisine = (v.cuisine || '').toLowerCase();
+    matchCuisine = Array.from(filters.cuisines).some(
+      filterCuisine => venueCuisine.includes(filterCuisine.toLowerCase())
+    );
+  }
   const matchSuburb = !filters.suburb || v.suburb === filters.suburb;
   const matchDays =
     !filters.days.length || v.packages.some(p => p.days.some(d => filters.days.includes(d)));
