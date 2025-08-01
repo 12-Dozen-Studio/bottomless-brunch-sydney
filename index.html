@@ -5,27 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bottomless Brunch Sydney</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* (No custom CSS needed for filter-panel top override; now handled by Tailwind utility class in panel HTML) */
+  </style>
 </head>
 <body class="bg-white text-gray-800 font-sans">
 
   <div class="max-w-md mx-auto">
 
-    <!-- Header -->
-    <header class="sticky top-0 z-10 bg-white shadow-sm p-4 flex justify-between items-center">
-      <h1 class="text-xl font-bold">Explore Venues</h1>
-      <div class="flex items-center space-x-2 bg-gray-100 rounded-full px-3 py-1">
-        <span class="material-icons text-gray-500">search</span>
-        <input type="text" id="searchInput" placeholder="Search" class="bg-transparent focus:outline-none text-sm w-24" />
-      </div>
-    </header>
+    <!-- Sticky Explore Venues Header + Filter Row -->
+    <div class="sticky top-0 z-30 bg-white">
+      <!-- Header -->
+      <header class="shadow-sm p-4 flex justify-between items-center">
+        <h1 class="text-xl font-bold">Explore Venues</h1>
+        <div class="flex items-center space-x-2 bg-gray-100 rounded-full px-3 py-1">
+          <span class="material-icons text-gray-500">search</span>
+          <input type="text" id="searchInput" placeholder="Search" class="bg-transparent focus:outline-none text-sm w-24" />
+        </div>
+      </header>
 
-    <!-- Filter Row -->
-    <div id="filterRow" class="sticky top-[72px] z-10 bg-white border-b border-gray-200 py-2 px-4 overflow-x-auto whitespace-nowrap no-scrollbar">
-      <!-- Cuisine/Price/Days Filters will be injected here -->
+      <!-- Filter Row -->
+      <div id="filterRow">
+        <!-- Cuisine/Price/Days Filters will be injected here -->
+      </div>
     </div>
 
     <!-- Venue List -->
-    <main id="venueList" class="p-4 space-y-4 pb-24">
+    <main id="venueList" class="p-4 space-y-4 pb-24 pt-[10px] z-10 relative">
       <!-- Venue Cards will be injected here by script.js -->
     </main>
 

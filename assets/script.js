@@ -11,21 +11,43 @@
 // ----- Global State -----
 let venuesData = [];
 const favorites = new Set(JSON.parse(localStorage.getItem('favorites') || '[]'));
-const filters = { search: '', cuisines: new Set(), suburb: '', days: [] }; // extendable
+// Add suburbs filter as a Set for multi-select
+const filters = { search: '', cuisines: new Set(), suburbs: new Set(), days: new Set() };
 let venueCards = []; // { el, index }
 let lastFocused = null; // element to restore focus after modal close
 let trapListener = null; // focus trap handler
+let suburbGroups = null; // loaded in init()
+let suburbGroupsWithOthers = null; // suburbGroups + "Others" group
 
 // Wait for DOM content to boot
 document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
+  // Load suburbGroups first
+  suburbGroups = await loadJSON('assets/suburb_groups.json');
   venuesData = await loadJSON('assets/brunch_venue.json');
+  // Compute "Others" group
+  computeSuburbGroupsWithOthers();
   renderFilters();
   renderBottomNav();
   renderVenues(venuesData); // pre-render all venue cards
   initSearch();
   filterVenues(); // apply initial filters
+}
+
+function computeSuburbGroupsWithOthers() {
+  // Get all suburbs from venues
+  const venueSuburbs = new Set(venuesData.map(v => v.suburb).filter(Boolean));
+  // Get all suburbs in groups
+  const groupedSuburbs = new Set();
+  Object.values(suburbGroups).forEach(arr => arr.forEach(s => groupedSuburbs.add(s)));
+  // Suburbs in venues but not in any group
+  const others = Array.from(venueSuburbs).filter(s => !groupedSuburbs.has(s)).sort();
+  // Copy suburbGroups and add Others if needed
+  suburbGroupsWithOthers = { ...suburbGroups };
+  if (others.length > 0) {
+    suburbGroupsWithOthers = { ...suburbGroupsWithOthers, Others: others };
+  }
 }
 
 // ---------- Data Helpers ----------
@@ -85,17 +107,74 @@ function renderFilters() {
   });
   filterRow.appendChild(cuisineScroll);
 
-  // Placeholder filter row (scrollable)
-  const placeholderScroll = document.createElement('div');
-  placeholderScroll.className = 'flex flex-row items-center overflow-x-auto whitespace-nowrap no-scrollbar space-x-2 px-2 py-2 mt-1';
-  const placeholders = ['Price', 'Suburb', 'Available Day', 'Sort'];
-  placeholders.forEach(label => {
-    const btn = document.createElement('button');
-    btn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 flex-shrink-0 focus:outline-none';
-    btn.textContent = label;
-    btn.disabled = true; // Placeholder, not functional yet
-    placeholderScroll.appendChild(btn);
+  // Second row: pill-style filters
+  const pillScroll = document.createElement('div');
+  pillScroll.className = 'flex flex-row items-center overflow-x-auto whitespace-nowrap no-scrollbar space-x-2 px-2 py-2 mt-1';
+  // Price
+  const priceBtn = document.createElement('button');
+  priceBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 flex-shrink-0 focus:outline-none';
+  priceBtn.textContent = 'Price';
+  priceBtn.disabled = true;
+  pillScroll.appendChild(priceBtn);
+  // Suburb pill
+  const suburbBtn = document.createElement('button');
+  suburbBtn.type = 'button';
+  suburbBtn.id = 'suburbFilterBtn';
+  suburbBtn.setAttribute('aria-haspopup', 'dialog');
+  suburbBtn.setAttribute('aria-expanded', 'false');
+  // Always start with base classes
+  suburbBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 flex-shrink-0 focus:outline-none';
+  // Compute active suburb group count (at least one suburb in group is selected)
+  let activeGroupCount = 0;
+  if (filters.suburbs && filters.suburbs.size > 0 && suburbGroupsWithOthers) {
+    activeGroupCount = Object.entries(suburbGroupsWithOthers).reduce((count, [group, suburbs]) => {
+      const anyInGroup = suburbs.some(sub => filters.suburbs.has(sub));
+      return count + (anyInGroup ? 1 : 0);
+    }, 0);
+  }
+  const suburbActive = activeGroupCount > 0;
+  if (suburbActive) {
+    suburbBtn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border-red-300');
+    suburbBtn.textContent = `Suburb (${activeGroupCount})`;
+  } else {
+    // Remove any active classes in case of re-render
+    suburbBtn.classList.remove('text-red-600', 'font-semibold', 'border-red-300');
+    suburbBtn.textContent = 'Suburb';
+  }
+  suburbBtn.addEventListener('click', () => {
+    renderSuburbPanel();
+    suburbBtn.setAttribute('aria-expanded', 'true');
   });
+  pillScroll.appendChild(suburbBtn);
+  // Available Day pill
+  const dayBtn = document.createElement('button');
+  dayBtn.type = 'button';
+  dayBtn.id = 'dayFilterBtn';
+  dayBtn.setAttribute('aria-haspopup', 'dialog');
+  dayBtn.setAttribute('aria-expanded', 'false');
+  dayBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 flex-shrink-0 focus:outline-none';
+  // Show active state if any days selected
+  const dayCount = filters.days && filters.days.size > 0 ? filters.days.size : 0;
+  const dayActive = dayCount > 0;
+  if (dayActive) {
+    dayBtn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border-red-300');
+    dayBtn.textContent = `Available Day (${dayCount})`;
+  } else {
+    dayBtn.classList.remove('text-red-600', 'font-semibold', 'border-red-300');
+    dayBtn.textContent = 'Available Day';
+  }
+  dayBtn.addEventListener('click', () => {
+    renderAvailableDayPanel();
+    dayBtn.setAttribute('aria-expanded', 'true');
+  });
+  pillScroll.appendChild(dayBtn);
+  // Sort
+  const sortBtn = document.createElement('button');
+  sortBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 flex-shrink-0 focus:outline-none';
+  sortBtn.textContent = 'Sort';
+  sortBtn.disabled = true;
+  pillScroll.appendChild(sortBtn);
+
   // Reset button (conditionally shown)
   const resetBtn = document.createElement('button');
   resetBtn.id = 'resetFiltersBtn';
@@ -103,20 +182,20 @@ function renderFilters() {
   resetBtn.textContent = 'Reset';
   resetBtn.addEventListener('click', () => {
     filters.cuisines = new Set();
-    filters.suburb = '';
-    filters.days = [];
+    filters.suburbs = new Set();
+    filters.days = new Set();
     filters.search = '';
     document.getElementById('searchInput').value = '';
     renderFilters();
     filterVenues();
     maybeShowReset();
   });
-  // Container for placeholder row and reset button
-  const placeholderRowWrap = document.createElement('div');
-  placeholderRowWrap.className = 'flex flex-row items-center w-full';
-  placeholderRowWrap.appendChild(placeholderScroll);
-  placeholderRowWrap.appendChild(resetBtn);
-  filterRow.appendChild(placeholderRowWrap);
+  // Container for pill row and reset button
+  const pillRowWrap = document.createElement('div');
+  pillRowWrap.className = 'flex flex-row items-center w-full';
+  pillRowWrap.appendChild(pillScroll);
+  pillRowWrap.appendChild(resetBtn);
+  filterRow.appendChild(pillRowWrap);
 
   // Set filterRow sticky etc classes (outer)
   filterRow.classList.add('bg-white', 'border-b', 'border-gray-200', 'sticky', 'top-[72px]', 'z-10');
@@ -129,10 +208,12 @@ function maybeShowReset() {
   const resetBtn = document.getElementById('resetFiltersBtn');
   if (!resetBtn) return;
   const cuisineActive = filters.cuisines.size > 0;
+  const suburbActive = filters.suburbs && filters.suburbs.size > 0;
+  const daysActive = filters.days && filters.days.size > 0;
   const active =
     cuisineActive ||
-    (filters.suburb && filters.suburb !== '') ||
-    (filters.days && filters.days.length > 0) ||
+    suburbActive ||
+    daysActive ||
     (filters.search && filters.search.trim() !== '');
   resetBtn.classList.toggle('hidden', !active);
 }
@@ -169,10 +250,179 @@ function matchesFilters(v) {
       filterCuisine => venueCuisine.includes(filterCuisine.toLowerCase())
     );
   }
-  const matchSuburb = !filters.suburb || v.suburb === filters.suburb;
-  const matchDays =
-    !filters.days.length || v.packages.some(p => p.days.some(d => filters.days.includes(d)));
+  // Suburb filter: multi-select
+  const matchSuburb =
+    !filters.suburbs || filters.suburbs.size === 0 || filters.suburbs.has(v.suburb);
+  // Day filter: OR logic, match if any selected day is available in any package
+  let matchDays = true;
+  if (filters.days && filters.days.size > 0) {
+    matchDays = v.packages &&
+      v.packages.some(pkg =>
+        pkg.days && pkg.days.some(d => filters.days.has(d))
+      );
+  }
   return matchQuery && matchCuisine && matchSuburb && matchDays;
+}
+
+// ---------- Suburb Panel ----------
+function renderSuburbPanelContent(panelContent) {
+  // Remove previous content
+  panelContent.innerHTML = '';
+  const groupEntries = Object.entries(suburbGroupsWithOthers);
+  groupEntries.forEach(([group, suburbs], idx) => {
+    const groupDiv = document.createElement('div');
+    // Add vertical padding and bottom border except last item
+    groupDiv.className = 'py-3' + (idx < groupEntries.length - 1 ? ' border-b border-gray-200' : '');
+    // Group-level checkbox
+    const groupId = 'suburb_group_' + group.replace(/\s+/g, '_');
+    const label = document.createElement('label');
+    // Use consistent bold text style for checkbox label
+    label.className = 'inline-flex items-center cursor-pointer font-semibold text-sm';
+    // Checkbox checked if ALL suburbs in group are in filters.suburbs
+    const allChecked = suburbs.length > 0 && suburbs.every(s => filters.suburbs.has(s));
+    const someChecked = suburbs.some(s => filters.suburbs.has(s));
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.value = group;
+    input.className = 'mr-2 accent-red-500';
+    input.id = groupId;
+    input.checked = allChecked;
+    // Indeterminate state for partial selection
+    if (!allChecked && someChecked) {
+      input.indeterminate = true;
+    }
+    label.appendChild(input);
+    // Group title
+    const groupTitle = document.createElement('span');
+    groupTitle.className = ''; // Already styled on label
+    groupTitle.textContent = group;
+    label.appendChild(groupTitle);
+    groupDiv.appendChild(label);
+    // Suburb list (display only)
+    const suburbList = document.createElement('div');
+    // Reduce font size to match cuisine label: text-[11px]
+    suburbList.className = 'text-[11px] text-gray-500 font-light ml-6 mt-1';
+    suburbList.textContent = suburbs.join(', ');
+    groupDiv.appendChild(suburbList);
+    panelContent.appendChild(groupDiv);
+    // Event: group checkbox toggles all suburbs in group
+    input.addEventListener('change', e => {
+      if (e.target.checked) {
+        suburbs.forEach(s => filters.suburbs.add(s));
+      } else {
+        suburbs.forEach(s => filters.suburbs.delete(s));
+      }
+      // Instead of re-rendering the entire panel, update checkbox states only
+      const checkboxes = panelContent.querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach(cb => {
+        const groupName = cb.value;
+        const groupSuburbs = suburbGroupsWithOthers[groupName];
+        const allChecked = groupSuburbs.length > 0 && groupSuburbs.every(s => filters.suburbs.has(s));
+        const someChecked = groupSuburbs.some(s => filters.suburbs.has(s));
+        cb.checked = allChecked;
+        cb.indeterminate = !allChecked && someChecked;
+      });
+    });
+  });
+}
+
+function renderSuburbPanel() {
+  if (!suburbGroupsWithOthers) return;
+  // Remove any existing panel
+  const existing = document.getElementById('suburbPanelBackdrop');
+  if (existing) existing.remove();
+  // Backdrop
+  const backdrop = document.createElement('div');
+  backdrop.id = 'suburbPanelBackdrop';
+  backdrop.className = 'fixed inset-0 z-50 flex items-end justify-center';
+  backdrop.setAttribute('role', 'dialog');
+  backdrop.setAttribute('aria-modal', 'true');
+  backdrop.setAttribute('aria-labelledby', 'suburbPanelTitle');
+  // dark bg
+  const scrim = document.createElement('div');
+  scrim.className = 'absolute inset-0 bg-black bg-opacity-30';
+  scrim.tabIndex = -1;
+  scrim.addEventListener('click', closeSuburbPanel);
+  backdrop.appendChild(scrim);
+  // Panel
+  const panel = document.createElement('div');
+  panel.id = 'suburbPanel';
+  panel.className =
+    'fixed inset-x-0 bottom-0 bg-white max-h-screen flex flex-col rounded-t-2xl z-50 transition-transform duration-300 transform translate-y-full';
+  panel.tabIndex = 0;
+  // Panel content structure
+  panel.innerHTML = `
+    <div class="flex justify-between items-center pb-2 px-4 pt-4">
+      <h2 id="suburbPanelTitle" class="text-lg font-semibold text-center w-full">Select Suburbs</h2>
+      <button type="button" class="text-gray-400 absolute right-6" aria-label="Close suburb panel" id="closeSuburbPanelBtn">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+    <div class="flex-1 overflow-y-auto px-6" id="suburbGroupsWrap">
+      <!-- suburb group checkboxes -->
+    </div>
+    <div class="flex justify-center gap-4 p-4 border-t">
+      <button type="button" id="resetSuburbBtn" class="px-4 py-2 rounded-full border border-gray-300 text-gray-600 bg-gray-50">Reset</button>
+      <button type="button" id="applySuburbBtn" class="px-4 py-2 rounded-full bg-red-500 text-white font-semibold shadow">Apply</button>
+    </div>
+  `;
+  // Render suburb group-level checkboxes and suburb lists
+  const groupsWrap = panel.querySelector('#suburbGroupsWrap');
+  renderSuburbPanelContent(groupsWrap);
+  // Event: close
+  panel.querySelector('#closeSuburbPanelBtn').addEventListener('click', closeSuburbPanel);
+  // Event: reset
+  panel.querySelector('#resetSuburbBtn').addEventListener('click', () => {
+    filters.suburbs.clear();
+    renderSuburbPanelContent(groupsWrap);
+    renderFilters();
+  });
+  // Event: apply
+  panel.querySelector('#applySuburbBtn').addEventListener('click', () => {
+    closeSuburbPanel();
+    // Update filter pill styling and label after applying
+    renderFilters();
+    filterVenues();
+    maybeShowReset();
+  });
+  // Keyboard: esc closes
+  panel.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeSuburbPanel();
+    }
+  });
+  // Focus trap
+  setTimeout(() => {
+    // Focus first checkbox if any, else panel
+    const firstCb = panel.querySelector('input[type="checkbox"]');
+    if (firstCb) firstCb.focus();
+    else panel.focus();
+  }, 0);
+  // Slide up animation
+  requestAnimationFrame(() => {
+    panel.classList.remove('translate-y-full');
+  });
+  // Remove panel on backdrop click
+  backdrop.appendChild(panel);
+  document.body.appendChild(backdrop);
+  document.body.classList.add('overflow-hidden');
+}
+
+function closeSuburbPanel() {
+  const backdrop = document.getElementById('suburbPanelBackdrop');
+  if (!backdrop) return;
+  const panel = document.getElementById('suburbPanel');
+  if (panel) panel.classList.add('translate-y-full');
+  setTimeout(() => {
+    if (backdrop) backdrop.remove();
+    document.body.classList.remove('overflow-hidden');
+    // Restore focus to Suburb filter button
+    const btn = document.getElementById('suburbFilterBtn');
+    if (btn) {
+      btn.setAttribute('aria-expanded', 'false');
+      btn.focus();
+    }
+  }, 300);
 }
 
 // ---------- Day Formatting Helper ----------
@@ -468,3 +718,141 @@ function renderBottomNav() {
     </nav>`;
 }
 
+
+// ---------- Available Day Panel ----------
+function renderAvailableDayPanelContent(panelContent) {
+  // Remove previous content
+  panelContent.innerHTML = '';
+  const daysOfWeek = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday'
+  ];
+  daysOfWeek.forEach((day, idx) => {
+    const div = document.createElement('div');
+    // Add vertical padding and border except last item
+    div.className = 'flex items-center py-3' + (idx < daysOfWeek.length - 1 ? ' border-b border-gray-200' : '');
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.value = day;
+    input.className = 'accent-red-500 mr-2';
+    input.id = 'day_cb_' + day;
+    input.checked = filters.days.has(day);
+    input.addEventListener('change', e => {
+      if (e.target.checked) {
+        filters.days.add(day);
+      } else {
+        filters.days.delete(day);
+      }
+    });
+    const label = document.createElement('label');
+    label.htmlFor = input.id;
+    // Use same bold class as Suburb panel: font-semibold text-sm
+    label.className = 'font-semibold text-sm text-gray-800 cursor-pointer';
+    label.textContent = day;
+    div.appendChild(input);
+    div.appendChild(label);
+    panelContent.appendChild(div);
+  });
+}
+
+function renderAvailableDayPanel() {
+  // Remove any existing panel
+  const existing = document.getElementById('availableDayPanelBackdrop');
+  if (existing) existing.remove();
+  // Backdrop
+  const backdrop = document.createElement('div');
+  backdrop.id = 'availableDayPanelBackdrop';
+  backdrop.className = 'fixed inset-0 z-50 flex items-end justify-center';
+  backdrop.setAttribute('role', 'dialog');
+  backdrop.setAttribute('aria-modal', 'true');
+  backdrop.setAttribute('aria-labelledby', 'availableDayPanelTitle');
+  // dark bg
+  const scrim = document.createElement('div');
+  scrim.className = 'absolute inset-0 bg-black bg-opacity-30';
+  scrim.tabIndex = -1;
+  scrim.addEventListener('click', closeAvailableDayPanel);
+  backdrop.appendChild(scrim);
+  // Panel
+  const panel = document.createElement('div');
+  panel.id = 'availableDayPanel';
+  panel.className =
+    'fixed inset-x-0 bottom-0 bg-white max-h-screen flex flex-col rounded-t-2xl z-50 transition-transform duration-300 transform translate-y-full';
+  panel.tabIndex = 0;
+  // Panel content structure
+  panel.innerHTML = `
+    <div class="flex justify-between items-center pb-2 px-4 pt-4">
+      <h2 id="availableDayPanelTitle" class="text-lg font-semibold text-center w-full">Available Day</h2>
+      <button type="button" class="text-gray-400 absolute right-6" aria-label="Close available day panel" id="closeAvailableDayPanelBtn">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+    <div class="flex-1 overflow-y-auto px-6" id="availableDayWrap">
+      <!-- day checkboxes -->
+    </div>
+    <div class="flex justify-center gap-4 p-4 border-t">
+      <button type="button" id="resetAvailableDayBtn" class="px-4 py-2 rounded-full border border-gray-300 text-gray-600 bg-gray-50">Reset</button>
+      <button type="button" id="applyAvailableDayBtn" class="px-4 py-2 rounded-full bg-red-500 text-white font-semibold shadow">Apply</button>
+    </div>
+  `;
+  // Render day checkboxes
+  const daysWrap = panel.querySelector('#availableDayWrap');
+  renderAvailableDayPanelContent(daysWrap);
+  // Event: close
+  panel.querySelector('#closeAvailableDayPanelBtn').addEventListener('click', closeAvailableDayPanel);
+  // Event: reset (just clears filters.days and re-renders checkboxes, panel remains open)
+  panel.querySelector('#resetAvailableDayBtn').addEventListener('click', () => {
+    filters.days.clear();
+    renderAvailableDayPanelContent(daysWrap);
+    renderFilters();
+  });
+  // Event: apply
+  panel.querySelector('#applyAvailableDayBtn').addEventListener('click', () => {
+    closeAvailableDayPanel();
+    renderFilters();
+    filterVenues();
+    maybeShowReset();
+  });
+  // Keyboard: esc closes
+  panel.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeAvailableDayPanel();
+    }
+  });
+  // Focus trap
+  setTimeout(() => {
+    // Focus first checkbox if any, else panel
+    const firstCb = panel.querySelector('input[type="checkbox"]');
+    if (firstCb) firstCb.focus();
+    else panel.focus();
+  }, 0);
+  // Slide up animation
+  requestAnimationFrame(() => {
+    panel.classList.remove('translate-y-full');
+  });
+  // Remove panel on backdrop click
+  backdrop.appendChild(panel);
+  document.body.appendChild(backdrop);
+  document.body.classList.add('overflow-hidden');
+}
+
+function closeAvailableDayPanel() {
+  const backdrop = document.getElementById('availableDayPanelBackdrop');
+  if (!backdrop) return;
+  const panel = document.getElementById('availableDayPanel');
+  if (panel) panel.classList.add('translate-y-full');
+  setTimeout(() => {
+    if (backdrop) backdrop.remove();
+    document.body.classList.remove('overflow-hidden');
+    // Restore focus to Available Day filter button
+    const btn = document.getElementById('dayFilterBtn');
+    if (btn) {
+      btn.setAttribute('aria-expanded', 'false');
+      btn.focus();
+    }
+  }, 300);
+}
