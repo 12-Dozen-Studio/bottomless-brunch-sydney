@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
   venuesData = await loadJSON('assets/brunch_venue.json');
-  renderFilters(getUniqueCuisines(venuesData));
+  renderFilters();
   renderBottomNav();
   renderVenues(venuesData); // pre-render all venue cards
   initSearch();
@@ -40,20 +40,32 @@ function getUniqueCuisines(venues) {
 }
 
 // ---------- Filter Rendering ----------
-function renderFilters(cuisines) {
+function renderFilters() {
+  const cuisines = [
+    'All',
+    'Australian',
+    'Japanese',
+    'Italian',
+    'Mexican',
+    'French',
+    'Mediterranean',
+    'Asian'
+  ];
   const filterRow = document.getElementById('filterRow');
   filterRow.innerHTML = '';
-  const all = ['All', ...cuisines];
-  all.forEach(cuisine => {
+  filterRow.className = 'flex flex-row items-center overflow-x-auto whitespace-nowrap no-scrollbar space-x-2 px-2 py-2 bg-white border-b border-gray-200 sticky top-[72px] z-10';
+
+  cuisines.forEach(cuisine => {
     const btn = document.createElement('button');
-    btn.className = 'flex flex-col items-center space-y-2 flex-shrink-0 mr-4 focus:outline-none';
+    btn.className = 'flex flex-col items-center space-y-1 flex-shrink-0 focus:outline-none min-w-[60px]';
     btn.setAttribute('aria-label', `${cuisine} cuisine filter`);
     btn.setAttribute('aria-pressed', cuisine === filters.cuisine);
     btn.innerHTML = `
-      <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-        <span class="material-icons text-gray-500">restaurant</span>
+      <div class="w-10 h-10 bg-white border border-gray-300 rounded-full flex items-center justify-center shadow-sm">
+        <span class="material-icons text-gray-600">${cuisine === 'All' ? 'apps' : 'restaurant'}</span>
       </div>
-      <span class="text-xs text-gray-700 text-center">${cuisine}</span>`;
+      <span class="text-[11px] text-gray-700 text-center leading-tight">${cuisine}</span>
+    `;
     btn.addEventListener('click', () => {
       filters.cuisine = cuisine;
       updateFilterButtons(filterRow, cuisine);
@@ -92,11 +104,45 @@ function matchesFilters(v) {
   const q = filters.search;
   const matchQuery =
     !q || v.name.toLowerCase().includes(q) || v.suburb.toLowerCase().includes(q);
-  const matchCuisine = filters.cuisine === 'All' || v.cuisine === filters.cuisine;
+  const matchCuisine = filters.cuisine === 'All' || (v.cuisine && v.cuisine.toLowerCase().includes(filters.cuisine.toLowerCase()));
   const matchSuburb = !filters.suburb || v.suburb === filters.suburb;
   const matchDays =
     !filters.days.length || v.packages.some(p => p.days.some(d => filters.days.includes(d)));
   return matchQuery && matchCuisine && matchSuburb && matchDays;
+}
+
+// ---------- Day Formatting Helper ----------
+function formatDays(days) {
+  if (!Array.isArray(days) || days.length === 0) return '';
+  const dayMap = {
+    Monday: 'Mon',
+    Tuesday: 'Tue',
+    Wednesday: 'Wed',
+    Thursday: 'Thu',
+    Friday: 'Fri',
+    Saturday: 'Sat',
+    Sunday: 'Sun'
+  };
+  const allDays = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const daysShort = days.map(d => dayMap[d] || d);
+  // Detect daily
+  if (days.length === 7 || allDays.every(d => days.includes(d))) return 'Daily';
+  // Detect Fri–Sun or Tue–Thu etc
+  const idxs = days.map(d => allDays.indexOf(d)).sort((a,b)=>a-b);
+  // Check if days are a contiguous block
+  if (idxs.length > 1) {
+    let contiguous = true;
+    for (let i = 1; i < idxs.length; i++) {
+      if (idxs[i] !== idxs[i-1]+1) { contiguous = false; break; }
+    }
+    if (contiguous) {
+      return `${dayMap[allDays[idxs[0]]]} – ${dayMap[allDays[idxs[idxs.length-1]]]}`;
+    }
+  }
+  // If two days, join with &
+  if (daysShort.length === 2) return `${daysShort[0]} & ${daysShort[1]}`;
+  // If 3+ non-contiguous, join with commas and last with comma
+  return daysShort.join(', ');
 }
 
 // ---------- Venue Card Rendering ----------
@@ -169,7 +215,7 @@ function renderPackageRow(pkg) {
       <div class="font-medium text-gray-700">${pkg.name || 'Package'}</div>
       <div class="text-right">
         <p class="font-bold text-gray-800">$${pkg.price} pp</p>
-        <p class="text-xs text-gray-500">${(pkg.days && pkg.days.join(', ')) || ''}</p>
+        <p class="text-xs text-gray-500">${formatDays(pkg.days) || ''}</p>
       </div>
     </div>
   `;
@@ -304,7 +350,7 @@ function renderModalPackage(pkg) {
         <span class="font-medium text-gray-700">${pkg.name}</span>
         <span class="font-bold text-gray-800">$${pkg.price} pp</span>
       </div>
-      <div class="text-xs text-gray-500">${(pkg.days && pkg.days.join(', ')) || ''} | ${(pkg.sessions && pkg.sessions.join(', ')) || ''} | ${pkg.duration} mins</div>
+      <div class="text-xs text-gray-500">${formatDays(pkg.days) || ''}${(pkg.sessions && pkg.sessions.length) ? ' | ' + pkg.sessions.join(', ') : ''} | ${pkg.duration} mins</div>
       <p class="text-xs mt-1 text-gray-600">${pkg.description || ''}</p>
     </div>
   `;
