@@ -12,7 +12,7 @@
 let venuesData = [];
 const favorites = new Set(JSON.parse(localStorage.getItem('favorites') || '[]'));
 // Add suburbs filter as a Set for multi-select
-const filters = { search: '', cuisines: new Set(), suburbs: new Set(), days: new Set() };
+const filters = { search: '', cuisines: new Set(), suburbs: new Set(), days: new Set(), price: null };
 let venueCards = []; // { el, index }
 let lastFocused = null; // element to restore focus after modal close
 let trapListener = null; // focus trap handler
@@ -112,11 +112,29 @@ function renderFilters() {
   pillScroll.className = 'flex flex-row items-center overflow-x-auto whitespace-nowrap no-scrollbar space-x-2 px-2 py-2 mt-1';
   // Price
   const priceBtn = document.createElement('button');
+  priceBtn.type = 'button';
+  priceBtn.id = 'priceFilterBtn';
+  priceBtn.setAttribute('aria-haspopup', 'dialog');
+  priceBtn.setAttribute('aria-expanded', 'false');
+  // Always start with base classes
   priceBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 flex-shrink-0 focus:outline-none';
-  priceBtn.textContent = 'Price';
-  priceBtn.disabled = true;
+  // Show selected price as label when active
+  let priceActive = !!filters.price;
+  if (priceActive) {
+    // Remove any previous background or border classes that could conflict
+    priceBtn.classList.remove('bg-[#363636]', 'text-white', 'border-gray-200', 'text-gray-700');
+    priceBtn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border', 'border-red-300');
+    priceBtn.textContent = filters.price;
+  } else {
+    // Remove any active classes in case of re-render
+    priceBtn.classList.remove('text-red-600', 'font-semibold', 'border-red-300');
+    priceBtn.textContent = 'Price';
+  }
+  priceBtn.addEventListener('click', () => {
+    renderPricePanel();
+    priceBtn.setAttribute('aria-expanded', 'true');
+  });
   pillScroll.appendChild(priceBtn);
-  // Suburb pill
   const suburbBtn = document.createElement('button');
   suburbBtn.type = 'button';
   suburbBtn.id = 'suburbFilterBtn';
@@ -184,6 +202,7 @@ function renderFilters() {
     filters.cuisines = new Set();
     filters.suburbs = new Set();
     filters.days = new Set();
+    filters.price = null;
     filters.search = '';
     document.getElementById('searchInput').value = '';
     renderFilters();
@@ -210,10 +229,12 @@ function maybeShowReset() {
   const cuisineActive = filters.cuisines.size > 0;
   const suburbActive = filters.suburbs && filters.suburbs.size > 0;
   const daysActive = filters.days && filters.days.size > 0;
+  const priceActive = !!filters.price;
   const active =
     cuisineActive ||
     suburbActive ||
     daysActive ||
+    priceActive ||
     (filters.search && filters.search.trim() !== '');
   resetBtn.classList.toggle('hidden', !active);
 }
@@ -261,7 +282,12 @@ function matchesFilters(v) {
         pkg.days && pkg.days.some(d => filters.days.has(d))
       );
   }
-  return matchQuery && matchCuisine && matchSuburb && matchDays;
+  // Price filter: match if venue.price === filters.price (if set)
+  let matchPrice = true;
+  if (filters.price) {
+    matchPrice = v.price === filters.price;
+  }
+  return matchQuery && matchCuisine && matchSuburb && matchDays && matchPrice;
 }
 
 // ---------- Suburb Panel ----------
@@ -850,6 +876,137 @@ function closeAvailableDayPanel() {
     document.body.classList.remove('overflow-hidden');
     // Restore focus to Available Day filter button
     const btn = document.getElementById('dayFilterBtn');
+    if (btn) {
+      btn.setAttribute('aria-expanded', 'false');
+      btn.focus();
+    }
+  }, 300);
+}
+// ---------- Price Panel ----------
+function renderPricePanel() {
+  // Remove any existing panel
+  const existing = document.getElementById('pricePanelBackdrop');
+  if (existing) existing.remove();
+  // Backdrop
+  const backdrop = document.createElement('div');
+  backdrop.id = 'pricePanelBackdrop';
+  backdrop.className = 'fixed inset-0 z-50 flex items-end justify-center';
+  backdrop.setAttribute('role', 'dialog');
+  backdrop.setAttribute('aria-modal', 'true');
+  backdrop.setAttribute('aria-labelledby', 'pricePanelTitle');
+  // dark bg
+  const scrim = document.createElement('div');
+  scrim.className = 'absolute inset-0 bg-black bg-opacity-30';
+  scrim.tabIndex = -1;
+  scrim.addEventListener('click', closePricePanel);
+  backdrop.appendChild(scrim);
+  // Panel
+  const panel = document.createElement('div');
+  panel.id = 'pricePanel';
+  panel.className =
+    'fixed inset-x-0 bottom-0 bg-white max-h-screen flex flex-col rounded-t-2xl z-50 transition-transform duration-300 transform translate-y-full';
+  panel.tabIndex = 0;
+  // Panel content structure
+  panel.innerHTML = `
+    <div class="flex justify-between items-center pb-2 px-4 pt-4">
+      <h2 id="pricePanelTitle" class="text-lg font-semibold text-center w-full">Price</h2>
+      <button type="button" class="text-gray-400 absolute right-6" aria-label="Close price panel" id="closePricePanelBtn">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+    <div class="flex justify-center gap-3 mt-2 mb-2" id="pricePillsWrap">
+      <!-- pills -->
+    </div>
+    <div class="flex justify-center gap-4 p-4 border-t">
+      <button type="button" id="resetPriceBtn" class="px-4 py-2 rounded-full border border-gray-300 text-gray-600 bg-gray-50">Reset</button>
+      <button type="button" id="applyPriceBtn" class="px-4 py-2 rounded-full bg-red-500 text-white font-semibold shadow">Apply</button>
+    </div>
+  `;
+  // Render pill buttons
+  const priceLevels = ["$", "$$", "$$$", "$$$$"];
+  const pillsWrap = panel.querySelector('#pricePillsWrap');
+  pillsWrap.innerHTML = '';
+  priceLevels.forEach(priceVal => {
+    const pill = document.createElement('button');
+    pill.type = 'button';
+    pill.textContent = priceVal;
+    pill.className = 'px-5 py-2 rounded-full border text-base font-semibold focus:outline-none transition';
+    if (filters.price === priceVal) {
+      pill.classList.add('bg-red-500', 'text-white', 'border-red-500', 'shadow');
+    } else {
+      pill.classList.add('bg-gray-100', 'text-gray-700', 'border-gray-200');
+    }
+    pill.addEventListener('click', () => {
+      if (filters.price === priceVal) {
+        // Deselect if already selected
+        filters.price = null;
+      } else {
+        filters.price = priceVal;
+      }
+      // Update pills only
+      Array.from(pillsWrap.children).forEach((btn, idx) => {
+        const btnVal = priceLevels[idx];
+        btn.className = 'px-5 py-2 rounded-full border text-base font-semibold focus:outline-none transition';
+        if (filters.price === btnVal) {
+          btn.classList.add('bg-red-500', 'text-white', 'border-red-500', 'shadow');
+        } else {
+          btn.classList.add('bg-gray-100', 'text-gray-700', 'border-gray-200');
+        }
+      });
+    });
+    pillsWrap.appendChild(pill);
+  });
+  // Event: close
+  panel.querySelector('#closePricePanelBtn').addEventListener('click', closePricePanel);
+  // Event: reset
+  panel.querySelector('#resetPriceBtn').addEventListener('click', () => {
+    filters.price = null;
+    // Update pills only
+    Array.from(pillsWrap.children).forEach((btn, idx) => {
+      btn.className = 'px-5 py-2 rounded-full border text-base font-semibold focus:outline-none transition bg-gray-100 text-gray-700 border-gray-200';
+    });
+    renderFilters();
+  });
+  // Event: apply
+  panel.querySelector('#applyPriceBtn').addEventListener('click', () => {
+    closePricePanel();
+    renderFilters();
+    filterVenues();
+    maybeShowReset();
+  });
+  // Keyboard: esc closes
+  panel.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closePricePanel();
+    }
+  });
+  // Focus trap
+  setTimeout(() => {
+    // Focus first pill if any, else panel
+    const firstPill = pillsWrap.querySelector('button');
+    if (firstPill) firstPill.focus();
+    else panel.focus();
+  }, 0);
+  // Slide up animation
+  requestAnimationFrame(() => {
+    panel.classList.remove('translate-y-full');
+  });
+  // Remove panel on backdrop click
+  backdrop.appendChild(panel);
+  document.body.appendChild(backdrop);
+  document.body.classList.add('overflow-hidden');
+}
+
+function closePricePanel() {
+  const backdrop = document.getElementById('pricePanelBackdrop');
+  if (!backdrop) return;
+  const panel = document.getElementById('pricePanel');
+  if (panel) panel.classList.add('translate-y-full');
+  setTimeout(() => {
+    if (backdrop) backdrop.remove();
+    document.body.classList.remove('overflow-hidden');
+    // Restore focus to Price filter button
+    const btn = document.getElementById('priceFilterBtn');
     if (btn) {
       btn.setAttribute('aria-expanded', 'false');
       btn.focus();
