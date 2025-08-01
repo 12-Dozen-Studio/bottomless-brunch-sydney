@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Bottomless Brunch Directory",
+  "description": "A nested directory of venues with one or more bottomless brunch packages per venue.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": [
+      "name",
+      "suburb",
+      "address",
+      "lat",
+      "lng",
+      "website",
+      "cuisine",
+      "packages"
+    ],
+    "properties": {
+      "name": {
+        "type": "string",
+        "description": "The name of the venue (as marketed to the public)."
+      },
+      "suburb": {
+        "type": "string",
+        "description": "The suburb or local area of the venue."
+      },
+      "address": {
+        "type": "string",
+        "description": "The full address, including street, suburb, and postcode."
+      },
+      "lat": {
+        "type": "number",
+        "description": "Latitude for map location."
+      },
+      "lng": {
+        "type": "number",
+        "description": "Longitude for map location."
+      },
+      "website": {
+        "type": "string",
+        "format": "uri",
+        "description": "Venue website or main brunch package page."
+      },
+      "cuisine": {
+        "type": "string",
+        "description": "Primary cuisine or style (e.g., Italian, Modern Australian)."
+      },
+      "imageUrl": {
+        "type": "string",
+        "format": "uri",
+        "description": "(Optional) Main image for the venue."
+      },
+      "instagram": {
+        "type": "string",
+        "format": "uri",
+        "description": "(Optional) Instagram account for the venue."
+      },
+      "packages": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": [
+            "name",
+            "price",
+            "duration",
+            "days",
+            "sessions",
+            "description"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "The package or promotion name (e.g., 'Standard', 'Margarita')."
+            },
+            "price": {
+              "type": "number",
+              "description": "Price per person (AUD)."
+            },
+            "duration": {
+              "type": "number",
+              "description": "Session duration in minutes."
+            },
+            "days": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "Monday",
+                  "Tuesday",
+                  "Wednesday",
+                  "Thursday",
+                  "Friday",
+                  "Saturday",
+                  "Sunday"
+                ]
+              },
+              "description": "Days of the week the package is available.",
+              "minItems": 1
+            },
+            "sessions": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^([01]?\\d|2[0-3]):[0-5]\\d$"
+              },
+              "description": "Session start times in 24-hour format (e.g., '12:00').",
+              "minItems": 1
+            },
+            "description": {
+              "type": "string",
+              "description": "Description of the package, including what's included."
+            },
+            "packageUrl": {
+              "type": "string",
+              "format": "uri",
+              "description": "(Optional) Link to specific booking/info page for this package."
+            },
+            "imageUrl": {
+              "type": "string",
+              "format": "uri",
+              "description": "(Optional) Package-specific image."
+            }
+          },
+          "additionalProperties": false
+        },
+        "description": "All brunch packages offered at this venue."
+      }
+    },
+    "additionalProperties": false
+  }
+}
