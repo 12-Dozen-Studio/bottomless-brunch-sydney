@@ -193,51 +193,55 @@ function renderFilters() {
   sortBtn.disabled = true;
   pillScroll.appendChild(sortBtn);
 
-  // Reset button (conditionally shown)
-  const resetBtn = document.createElement('button');
-  resetBtn.id = 'resetFiltersBtn';
-  resetBtn.className = 'ml-4 px-3 py-1 text-sm text-red-500 border border-red-200 rounded-full flex-shrink-0 hidden';
-  resetBtn.textContent = 'Reset';
-  resetBtn.addEventListener('click', () => {
-    filters.cuisines = new Set();
-    filters.suburbs = new Set();
-    filters.days = new Set();
-    filters.price = null;
-    filters.search = '';
-    document.getElementById('searchInput').value = '';
-    renderFilters();
-    filterVenues();
-    maybeShowReset();
-  });
-  // Container for pill row and reset button
+  // Container for pill row
   const pillRowWrap = document.createElement('div');
   pillRowWrap.className = 'flex flex-row items-center w-full';
   pillRowWrap.appendChild(pillScroll);
-  pillRowWrap.appendChild(resetBtn);
   filterRow.appendChild(pillRowWrap);
+
+  // Remove existing filter status row if present
+  const existingStatusRow = document.getElementById('filterStatusRow');
+  if (existingStatusRow) existingStatusRow.remove();
+
+  // New persistent filter status row
+  const filterStatusRow = document.createElement('div');
+  filterStatusRow.id = 'filterStatusRow';
+  filterStatusRow.className = 'flex items-center justify-between px-4 py-1 min-h-[36px] bg-white border-b border-gray-100 text-sm';
+
+  // Venue count text
+  const statusText = document.createElement('div');
+  const visibleCount = venueCards.filter(({ el }) => !el.classList.contains('hidden')).length;
+  const hasActive = filters.cuisines.size > 0 || filters.suburbs.size > 0 || filters.days.size > 0 || filters.price || (filters.search && filters.search.trim() !== '');
+  statusText.textContent = hasActive ? `${visibleCount} venues matched` : 'Showing all venues';
+  statusText.className = 'text-gray-700';
+
+  filterStatusRow.appendChild(statusText);
+
+  if (hasActive) {
+    const resetBtn = document.createElement('button');
+    resetBtn.textContent = 'Reset';
+    resetBtn.className = 'text-red-500 border border-red-200 px-3 py-1 rounded-full text-sm';
+    resetBtn.addEventListener('click', () => {
+      filters.cuisines.clear();
+      filters.suburbs.clear();
+      filters.days.clear();
+      filters.price = null;
+      filters.search = '';
+      document.getElementById('searchInput').value = '';
+      renderFilters();
+      filterVenues();
+    });
+    filterStatusRow.appendChild(resetBtn);
+  } else {
+    filterStatusRow.classList.add('justify-center');
+  }
+
+  filterRow.appendChild(filterStatusRow);
 
   // Set filterRow sticky etc classes (outer)
   filterRow.classList.add('bg-white', 'border-b', 'border-gray-200', 'sticky', 'top-[72px]', 'z-10');
-
-  maybeShowReset();
 }
 
-function maybeShowReset() {
-  // Show Reset button if any filter is active (not default)
-  const resetBtn = document.getElementById('resetFiltersBtn');
-  if (!resetBtn) return;
-  const cuisineActive = filters.cuisines.size > 0;
-  const suburbActive = filters.suburbs && filters.suburbs.size > 0;
-  const daysActive = filters.days && filters.days.size > 0;
-  const priceActive = !!filters.price;
-  const active =
-    cuisineActive ||
-    suburbActive ||
-    daysActive ||
-    priceActive ||
-    (filters.search && filters.search.trim() !== '');
-  resetBtn.classList.toggle('hidden', !active);
-}
 
 // No longer used: updateFilterButtons
 
@@ -768,21 +772,27 @@ function updateFavoriteIcons(index) {
 // ---------- Bottom Navigation ----------
 function renderBottomNav() {
   const nav = document.getElementById('bottomNav');
-  nav.innerHTML = `
-    <nav class="bg-white border-t border-gray-200 p-2 fixed bottom-0 w-full max-w-md mx-auto flex justify-around" role="navigation">
-      <a class="flex flex-col items-center text-red-500" href="#" aria-current="page" aria-label="Home">
-        <span class="material-icons">home</span>
-        <span class="text-xs font-medium">Home</span>
-      </a>
-      <a class="flex flex-col items-center text-gray-500 hover:text-red-500" href="#" aria-label="Map">
-        <span class="material-icons">map</span>
-        <span class="text-xs">Map</span>
-      </a>
-      <a class="flex flex-col items-center text-gray-500 hover:text-red-500" href="#" aria-label="Favourites">
-        <span class="material-icons">favorite_border</span>
-        <span class="text-xs">Favourites</span>
-      </a>
-    </nav>`;
+nav.innerHTML = `
+  <nav class="bottom-nav bg-white border-t border-gray-200 shadow-sm" role="navigation">
+    <div class="max-w-screen-sm mx-auto flex justify-between px-6 py-2">
+        <!-- Home -->
+        <div class="flex flex-col items-center text-xs">
+          <span class="material-icons text-red-500">home</span>
+          <span class="text-red-500">Home</span>
+        </div>
+        <!-- Map -->
+        <div class="flex flex-col items-center text-xs">
+          <span class="material-icons text-gray-300 pointer-events-none">map</span>
+          <span class="text-gray-300 pointer-events-none">Map</span>
+        </div>
+        <!-- Favourites -->
+        <div class="flex flex-col items-center text-xs">
+          <span class="material-icons text-gray-300 pointer-events-none">favorite_border</span>
+          <span class="text-gray-300 pointer-events-none">Favourites</span>
+        </div>
+      </div>
+    </nav>
+  `;
 }
 
 
