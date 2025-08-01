@@ -17,7 +17,10 @@
     <div class="sticky top-0 z-30 bg-white">
       <!-- Header -->
       <header class="shadow-sm p-4 flex justify-between items-center">
-        <h1 class="text-xl font-bold">Explore Venues</h1>
+        <div class="pt-1 leading-none">
+          <div class="text-xl font-bold leading-tight">Bottomless Brunch</div>
+          <div class="text-sm font-light text-gray-600 leading-snug">Sydney</div>
+        </div>
         <div class="flex items-center space-x-2 bg-gray-100 rounded-full px-3 py-1">
           <span class="material-icons text-gray-500">search</span>
           <input type="text" id="searchInput" placeholder="Search" class="bg-transparent focus:outline-none text-sm w-24" />
@@ -41,9 +44,13 @@
     </div>
 
     <!-- Bottom Navigation -->
-    <nav id="bottomNav" class="fixed bottom-0 w-full max-w-md mx-auto bg-white border-t border-gray-200 p-2 flex justify-around">
-      <!-- Bottom nav icons/buttons will be injected here -->
-    </nav>
+    <div class="fixed bottom-0 left-0 w-full z-50">
+      <div class="mx-auto max-w-screen-sm">
+        <div id="bottomNav">
+          <!-- Bottom nav icons/buttons will be injected here -->
+        </div>
+      </div>
+    </div>
 
   </div>
 
