@@ -1,0 +1,31 @@
+{
+  "CBD & Inner City": [
+    "Sydney CBD",
+    "Sydney CBD (Royal Botanic Garden)",
+    "Barangaroo",
+    "Darling Harbour",
+    "The Rocks"
+  ],
+  "Inner East": [
+    "Surry Hills",
+    "Darlinghurst",
+    "Paddington",
+    "Woollahra",
+    "Potts Point",
+    "Woolloomooloo"
+  ],
+  "Inner West": [
+    "Glebe",
+    "Marrickville"
+  ],
+  "North Shore": [
+    "North Sydney",
+    "Milsons Point",
+    "Neutral Bay"
+  ],
+  "Eastern Suburbs": [
+    "Coogee",
+    "North Bondi",
+    "Watsons Bay"
+  ]
+}
