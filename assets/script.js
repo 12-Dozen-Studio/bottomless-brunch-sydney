@@ -1009,6 +1009,10 @@ function renderPricePanel() {
       btn.className = 'px-5 py-2 rounded-full border text-base font-semibold focus:outline-none transition bg-gray-100 text-gray-700 border-gray-200';
     });
     renderFilters();
+    // Immediately apply filters and close the panel
+    filterVenues();
+    maybeShowReset();
+    closePricePanel();
   });
   // Event: apply
   panel.querySelector('#applyPriceBtn').addEventListener('click', () => {
@@ -1038,6 +1042,21 @@ function renderPricePanel() {
   backdrop.appendChild(panel);
   document.body.appendChild(backdrop);
   document.body.classList.add('overflow-hidden');
+
+  // ---- Add direct reset handler for "reset" button outside panel ----
+  // This block ensures the price reset button on the main filter row works instantly.
+  setTimeout(() => {
+    const priceResetBtn = document.getElementById('priceResetBtn');
+    if (priceResetBtn) {
+      priceResetBtn.addEventListener('click', () => {
+        filters.price = null;
+        renderFilters();
+        filterVenues();
+        maybeShowReset();
+        closePricePanel();
+      });
+    }
+  }, 0);
 }
 
 function closePricePanel() {
