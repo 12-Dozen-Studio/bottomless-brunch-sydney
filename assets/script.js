@@ -673,19 +673,15 @@ function closeModal() {
 }
 
 async function renderModal(venue, index) {
-  const images = (venue.imageUrl && venue.imageUrl.length
-    ? venue.imageUrl
-    : [
-      'images/placeholder-brunch.jpg',
-      'images/placeholder-crowd.jpg',
-      'images/placeholder-drinks.jpg'
-    ]
-  )
-    .map(
-      src =>
-        `<img src="${src}" alt="${venue.name}" class="w-full h-24 object-cover rounded" />`
-    )
-    .join('');
+  const imageNamePrefix = (venue.restaurantName || venue.name || 'placeholder')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+
+  const images = [1, 2, 3].map(i => {
+    const imagePath = `images/${imageNamePrefix}_${i}.jpg`;
+    return `<img src="${imagePath}" alt="${venue.name}" class="w-full h-24 object-cover rounded" onerror="this.src='images/placeholder-${['brunch', 'crowd', 'drinks'][i-1]}.jpg';" />`;
+  }).join('');
 
   // Map Section: Use Nominatim geocoding and OSM embed, but replace OSM link with Google Maps search
   let mapSection = '';
