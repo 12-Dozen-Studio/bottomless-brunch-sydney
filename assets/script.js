@@ -83,135 +83,153 @@ function renderFilters() {
     'Asian'
   ];
   const filterRow = document.getElementById('filterRow');
-  filterRow.innerHTML = '';
-  filterRow.className = '';
+  // Remove filterRow logic if not present (wrapper split)
+  // filterRow may not exist anymore, so skip className assignment
 
-  // Cuisine row (scrollable)
-  const cuisineScroll = document.createElement('div');
-  cuisineScroll.className = 'flex flex-row items-center overflow-x-auto whitespace-nowrap no-scrollbar space-x-2 px-2 py-2';
-  cuisines.forEach(cuisine => {
-    const isActive = filters.cuisines.has(cuisine);
-    const btn = document.createElement('button');
-    btn.className = 'flex flex-col items-center flex-shrink-0 focus:outline-none min-w-[60px]';
-    btn.setAttribute('aria-label', `${cuisine} cuisine filter`);
-    btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-    const iconPath = cuisineIconMap[cuisine] || 'images/filterIcons/fallback-icon.png';
-    btn.innerHTML = isActive
-      ? `
-        <img src="${iconPath}" alt="${cuisine}" class="w-20 h-20 object-contain animate-[swing_3s_ease-in-out_infinite]" />
-        <span class="text-xs text-red-600 font-semibold text-center leading-tight">${cuisine}</span>
-      `
-      : `
-        <img src="${iconPath}" alt="${cuisine}" class="w-20 h-20 object-contain" />
-        <span class="text-xs text-gray-700 text-center leading-tight">${cuisine}</span>
-      `;
-    btn.addEventListener('click', () => {
-      // Toggle logic for cuisines set (no "All")
-      if (filters.cuisines.has(cuisine)) {
-        filters.cuisines.delete(cuisine);
-      } else {
-        filters.cuisines.add(cuisine);
-      }
-      // Re-render to update button states
-      renderFilters();
-      filterVenues();
-      maybeShowReset();
+  // Cuisine row (scrollable) - now rendered into #cuisineFilters
+  const cuisineScroll = document.getElementById('cuisineFilters');
+  if (cuisineScroll) {
+    cuisineScroll.innerHTML = '';
+    cuisineScroll.className = 'flex overflow-x-auto scroll-smooth no-scrollbar';
+    cuisines.forEach(cuisine => {
+      const isActive = filters.cuisines.has(cuisine);
+      const btn = document.createElement('button');
+      btn.className = 'flex flex-col items-center flex-shrink-0 focus:outline-none min-w-[60px]';
+      btn.setAttribute('aria-label', `${cuisine} cuisine filter`);
+      btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      const iconPath = cuisineIconMap[cuisine] || 'images/filterIcons/fallback-icon.png';
+      btn.innerHTML = isActive
+        ? `
+          <img src="${iconPath}" alt="${cuisine}" class="w-20 h-20 object-contain animate-[swing_3s_ease-in-out_infinite]" />
+          <span class="text-xs text-red-600 font-semibold text-center leading-tight">${cuisine}</span>
+        `
+        : `
+          <img src="${iconPath}" alt="${cuisine}" class="w-20 h-20 object-contain" />
+          <span class="text-xs text-gray-700 text-center leading-tight">${cuisine}</span>
+        `;
+      btn.addEventListener('click', () => {
+        // Toggle logic for cuisines set (no "All")
+        if (filters.cuisines.has(cuisine)) {
+          filters.cuisines.delete(cuisine);
+        } else {
+          filters.cuisines.add(cuisine);
+        }
+        // Re-render to update button states
+        renderFilters();
+        filterVenues();
+        maybeShowReset();
+      });
+      cuisineScroll.appendChild(btn);
     });
-    cuisineScroll.appendChild(btn);
+  }
+// --------- Cuisine Filter Row Scroll Arrows Logic ---------
+document.addEventListener('DOMContentLoaded', () => {
+  const container = document.getElementById('cuisineFilters');
+  // Use the new cuisine filter row wrapper for arrows
+  const cuisineFilterRow = document.getElementById('cuisineFilterRow');
+  const leftArrow = document.getElementById('leftArrow');
+  const rightArrow = document.getElementById('rightArrow');
+  if (!container || !leftArrow || !rightArrow) return;
+
+  function updateArrowVisibility() {
+    const maxScroll = container.scrollWidth - container.clientWidth;
+    leftArrow.classList.toggle('hidden', container.scrollLeft <= 0);
+    rightArrow.classList.toggle('hidden', container.scrollLeft >= maxScroll - 2); // fudge for rounding
+  }
+
+  container.addEventListener('scroll', updateArrowVisibility);
+  window.addEventListener('resize', updateArrowVisibility);
+  setTimeout(updateArrowVisibility, 100); // Initial check after render
+
+  leftArrow.addEventListener('click', () => {
+    container.scrollBy({ left: -150, behavior: 'smooth' });
   });
-  filterRow.appendChild(cuisineScroll);
+  rightArrow.addEventListener('click', () => {
+    container.scrollBy({ left: 150, behavior: 'smooth' });
+  });
+});
 
   // Second row: pill-style filters
-  const pillScroll = document.createElement('div');
-  pillScroll.className = 'flex flex-row items-center overflow-x-auto whitespace-nowrap no-scrollbar space-x-2 px-2 py-2 mt-1';
-  // Price
-  const priceBtn = document.createElement('button');
-  priceBtn.type = 'button';
-  priceBtn.id = 'priceFilterBtn';
-  priceBtn.setAttribute('aria-haspopup', 'dialog');
-  priceBtn.setAttribute('aria-expanded', 'false');
-  // Always start with base classes
-  priceBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 flex-shrink-0 focus:outline-none';
-  // Show selected price as label when active
-  let priceActive = !!filters.price;
-  if (priceActive) {
-    // Remove any previous background or border classes that could conflict
-    priceBtn.classList.remove('bg-[#363636]', 'text-white', 'border-gray-200', 'text-gray-700');
-    priceBtn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border', 'border-red-300');
-    priceBtn.textContent = filters.price;
-  } else {
-    // Remove any active classes in case of re-render
-    priceBtn.classList.remove('text-red-600', 'font-semibold', 'border-red-300');
-    priceBtn.textContent = 'Price';
+  // Clear the pillFilters container before rendering filter pills
+  const pillFilters = document.getElementById('pillFilters');
+  if (pillFilters) {
+    pillFilters.innerHTML = '';
+    // Price
+    const priceBtn = document.createElement('button');
+    priceBtn.type = 'button';
+    priceBtn.id = 'priceFilterBtn';
+    priceBtn.setAttribute('aria-haspopup', 'dialog');
+    priceBtn.setAttribute('aria-expanded', 'false');
+    priceBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 flex-shrink-0 focus:outline-none';
+    let priceActive = !!filters.price;
+    if (priceActive) {
+      priceBtn.classList.remove('bg-[#363636]', 'text-white', 'border-gray-200', 'text-gray-700');
+      priceBtn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border', 'border-red-300');
+      priceBtn.textContent = filters.price;
+    } else {
+      priceBtn.classList.remove('text-red-600', 'font-semibold', 'border-red-300');
+      priceBtn.textContent = 'Price';
+    }
+    priceBtn.addEventListener('click', () => {
+      renderPricePanel();
+      priceBtn.setAttribute('aria-expanded', 'true');
+    });
+    pillFilters.appendChild(priceBtn);
+    // Suburb
+    const suburbBtn = document.createElement('button');
+    suburbBtn.type = 'button';
+    suburbBtn.id = 'suburbFilterBtn';
+    suburbBtn.setAttribute('aria-haspopup', 'dialog');
+    suburbBtn.setAttribute('aria-expanded', 'false');
+    suburbBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 flex-shrink-0 focus:outline-none';
+    let activeGroupCount = 0;
+    if (filters.suburbs && filters.suburbs.size > 0 && suburbGroupsWithOthers) {
+      activeGroupCount = Object.entries(suburbGroupsWithOthers).reduce((count, [group, suburbs]) => {
+        const anyInGroup = suburbs.some(sub => filters.suburbs.has(sub));
+        return count + (anyInGroup ? 1 : 0);
+      }, 0);
+    }
+    const suburbActive = activeGroupCount > 0;
+    if (suburbActive) {
+      suburbBtn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border-red-300');
+      suburbBtn.textContent = `Suburb (${activeGroupCount})`;
+    } else {
+      suburbBtn.classList.remove('text-red-600', 'font-semibold', 'border-red-300');
+      suburbBtn.textContent = 'Suburb';
+    }
+    suburbBtn.addEventListener('click', () => {
+      renderSuburbPanel();
+      suburbBtn.setAttribute('aria-expanded', 'true');
+    });
+    pillFilters.appendChild(suburbBtn);
+    // Available Day
+    const dayBtn = document.createElement('button');
+    dayBtn.type = 'button';
+    dayBtn.id = 'dayFilterBtn';
+    dayBtn.setAttribute('aria-haspopup', 'dialog');
+    dayBtn.setAttribute('aria-expanded', 'false');
+    dayBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 flex-shrink-0 focus:outline-none';
+    const dayCount = filters.days && filters.days.size > 0 ? filters.days.size : 0;
+    const dayActive = dayCount > 0;
+    if (dayActive) {
+      dayBtn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border-red-300');
+      dayBtn.textContent = `Available Day (${dayCount})`;
+    } else {
+      dayBtn.classList.remove('text-red-600', 'font-semibold', 'border-red-300');
+      dayBtn.textContent = 'Available Day';
+    }
+    dayBtn.addEventListener('click', () => {
+      renderAvailableDayPanel();
+      dayBtn.setAttribute('aria-expanded', 'true');
+    });
+    pillFilters.appendChild(dayBtn);
+    // Sort
+    const sortBtn = document.createElement('button');
+    sortBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 flex-shrink-0 focus:outline-none';
+    sortBtn.textContent = 'Sort';
+    sortBtn.disabled = true;
+    pillFilters.appendChild(sortBtn);
   }
-  priceBtn.addEventListener('click', () => {
-    renderPricePanel();
-    priceBtn.setAttribute('aria-expanded', 'true');
-  });
-  pillScroll.appendChild(priceBtn);
-  const suburbBtn = document.createElement('button');
-  suburbBtn.type = 'button';
-  suburbBtn.id = 'suburbFilterBtn';
-  suburbBtn.setAttribute('aria-haspopup', 'dialog');
-  suburbBtn.setAttribute('aria-expanded', 'false');
-  // Always start with base classes
-  suburbBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 flex-shrink-0 focus:outline-none';
-  // Compute active suburb group count (at least one suburb in group is selected)
-  let activeGroupCount = 0;
-  if (filters.suburbs && filters.suburbs.size > 0 && suburbGroupsWithOthers) {
-    activeGroupCount = Object.entries(suburbGroupsWithOthers).reduce((count, [group, suburbs]) => {
-      const anyInGroup = suburbs.some(sub => filters.suburbs.has(sub));
-      return count + (anyInGroup ? 1 : 0);
-    }, 0);
-  }
-  const suburbActive = activeGroupCount > 0;
-  if (suburbActive) {
-    suburbBtn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border-red-300');
-    suburbBtn.textContent = `Suburb (${activeGroupCount})`;
-  } else {
-    // Remove any active classes in case of re-render
-    suburbBtn.classList.remove('text-red-600', 'font-semibold', 'border-red-300');
-    suburbBtn.textContent = 'Suburb';
-  }
-  suburbBtn.addEventListener('click', () => {
-    renderSuburbPanel();
-    suburbBtn.setAttribute('aria-expanded', 'true');
-  });
-  pillScroll.appendChild(suburbBtn);
-  // Available Day pill
-  const dayBtn = document.createElement('button');
-  dayBtn.type = 'button';
-  dayBtn.id = 'dayFilterBtn';
-  dayBtn.setAttribute('aria-haspopup', 'dialog');
-  dayBtn.setAttribute('aria-expanded', 'false');
-  dayBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 flex-shrink-0 focus:outline-none';
-  // Show active state if any days selected
-  const dayCount = filters.days && filters.days.size > 0 ? filters.days.size : 0;
-  const dayActive = dayCount > 0;
-  if (dayActive) {
-    dayBtn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border-red-300');
-    dayBtn.textContent = `Available Day (${dayCount})`;
-  } else {
-    dayBtn.classList.remove('text-red-600', 'font-semibold', 'border-red-300');
-    dayBtn.textContent = 'Available Day';
-  }
-  dayBtn.addEventListener('click', () => {
-    renderAvailableDayPanel();
-    dayBtn.setAttribute('aria-expanded', 'true');
-  });
-  pillScroll.appendChild(dayBtn);
-  // Sort
-  const sortBtn = document.createElement('button');
-  sortBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 flex-shrink-0 focus:outline-none';
-  sortBtn.textContent = 'Sort';
-  sortBtn.disabled = true;
-  pillScroll.appendChild(sortBtn);
-
-  // Container for pill row
-  const pillRowWrap = document.createElement('div');
-  pillRowWrap.className = 'flex flex-row items-center w-full';
-  pillRowWrap.appendChild(pillScroll);
-  filterRow.appendChild(pillRowWrap);
 
   // Remove existing filter status row if present
   const existingStatusRow = document.getElementById('filterStatusRow');
@@ -250,10 +268,12 @@ function renderFilters() {
     filterStatusRow.classList.add('justify-center');
   }
 
-  filterRow.appendChild(filterStatusRow);
-
-  // Set filterRow sticky etc classes (outer)
-  filterRow.classList.add('bg-white', 'border-b', 'border-gray-200', 'sticky', 'top-[72px]', 'z-10');
+  // Only append filterStatusRow if filterRow exists
+  if (filterRow) {
+    filterRow.appendChild(filterStatusRow);
+    // Set filterRow sticky etc classes (outer)
+    filterRow.classList.add('bg-white', 'border-b', 'border-gray-200', 'sticky', 'top-[72px]', 'z-10');
+  }
 }
 
 
@@ -566,8 +586,9 @@ function getVenueKey(name) {
 
 function renderVenueCard(venue, index) {
   const card = document.createElement('div');
+  // Set consistent card height and flex layout
   card.className =
-    'bg-white rounded-lg overflow-hidden border border-gray-200 flex cursor-pointer focus:outline-none';
+    'relative bg-white rounded-lg overflow-hidden border border-gray-200 flex cursor-pointer focus:outline-none h-[160px]';
   card.tabIndex = 0;
   card.setAttribute('role', 'button');
   card.setAttribute('aria-label', `${venue.name} details`);
@@ -579,32 +600,37 @@ function renderVenueCard(venue, index) {
   // List view image rendering logic
   const venueKey = getVenueKey(venue.name || venue.restaurantName || '');
   const imagePath = venueKey ? `images/${venueKey}_1.jpg` : 'images/placeholder-brunch.jpg';
-  const imageTag = `<img src="${imagePath}" alt="${venue.name}" class="w-full h-32 object-cover rounded-t-lg" onerror="this.src='images/placeholder-brunch.jpg';" />`;
+  // Image container: enforce fixed width and full height, and image covers container
+  const imageTag = `
+    <div class="w-[120px] h-full flex-shrink-0 overflow-hidden">
+      <img src="${imagePath}" alt="${venue.name}" class="w-full h-full object-cover" onerror="this.src='images/placeholder-brunch.jpg';" />
+    </div>
+  `;
 
   card.innerHTML = `
-<div class="w-1/3 min-w-[96px] flex items-stretch">
-  ${imageTag}
-</div>
-      <div class="w-2/3 p-3 flex flex-col justify-between">
-        <div class="flex justify-between items-start">
-          <div>
-            <h2 class="text-base font-bold text-gray-900">${venue.name}</h2>
-            <div class="flex items-center text-xs text-gray-600 mt-1">
-              <span class="material-icons text-xs mr-1">location_on</span>
-              <span>${venue.suburb}</span>
-              <span class="mx-1">•</span>
-              <span>${venue.cuisine}</span>
-            </div>
+    ${imageTag}
+    <div class="flex-1 p-3 flex flex-col justify-between">
+      <div class="flex justify-between items-start">
+        <div>
+          <h2 class="text-base font-bold text-gray-900">${venue.name}</h2>
+          <div class="flex items-center text-xs text-gray-600 mt-1">
+            <span class="material-icons text-xs mr-1">location_on</span>
+            <span>${venue.suburb}</span>
+            <span class="mx-1">•</span>
+            <span>${venue.cuisine}</span>
           </div>
-          <button data-fav-index="${index}" class="text-gray-400 hover:text-red-500" aria-label="Toggle favourite" aria-pressed="${favorites.has(index)}">
-            <span class="material-icons text-xl">${favorites.has(index) ? 'favorite' : 'favorite_border'}</span>
-          </button>
-        </div>
-        <div class="mt-2 space-y-1">
-          ${venue.packages && venue.packages.length ? venue.packages.map(renderPackageRow).join('') : '<p class="text-xs text-gray-500">No packages available.</p>'}
         </div>
       </div>
-    `;
+      <div class="mt-2 space-y-1">
+        ${venue.packages && venue.packages.length ? venue.packages.map(renderPackageRow).join('') : '<p class="text-xs text-gray-500">No packages available.</p>'}
+      </div>
+    </div>
+    <div class="absolute top-2 right-2">
+      <button data-fav-index="${index}" class="text-gray-400 hover:text-red-500 p-0 m-0" aria-label="Toggle favourite" aria-pressed="${favorites.has(index)}">
+        <span class="material-icons text-xl">${favorites.has(index) ? 'favorite' : 'favorite_border'}</span>
+      </button>
+    </div>
+  `;
 
   card.addEventListener('click', () => openModal(venue, index));
   card.addEventListener('keydown', e => {

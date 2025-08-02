@@ -34,8 +34,30 @@
       </header>
 
       <!-- Filter Row -->
-      <div id="filterRow">
-        <!-- Cuisine/Price/Days Filters will be injected here -->
+<!-- Cuisine Filters: scrollable -->
+<div id="cuisineFilterRow" class="relative">
+  <div id="cuisineFilters" class="flex overflow-x-auto no-scrollbar scroll-smooth px-4 py-2 gap-3">
+    <!-- Cuisine icons injected dynamically -->
+  </div>
+
+  <!-- Scroll arrows -->
+  <button id="leftArrow" class="absolute left-0 top-0 bottom-0 z-10 px-2 hidden bg-gradient-to-r from-white/90 to-transparent">
+    <span class="text-gray-400 text-2xl">←</span>
+  </button>
+  <button id="rightArrow" class="absolute right-0 top-0 bottom-0 z-10 px-2 hidden bg-gradient-to-l from-white/90 to-transparent">
+    <span class="text-gray-400 text-2xl">→</span>
+  </button>
+</div>
+
+<!-- Pill Filters: static -->
+<div id="pillFilters" class="flex items-center px-4 py-2 w-full gap-1">
+  <button class="pill">Price</button>
+  <button class="pill">Suburb</button>
+  <button class="pill">Available Day</button>
+
+  <!-- Push Sort to right -->
+  <button class="pill ml-auto">Sort</button>
+</div>
       </div>
     </div>
 
