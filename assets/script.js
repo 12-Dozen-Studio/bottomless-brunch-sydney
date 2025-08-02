@@ -541,6 +541,15 @@ function renderVenues(venues) {
   });
 }
 
+// Helper function to generate venueKey from venue name (matches Python script logic)
+function generateVenueKey(name) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '_')  // replace non-alphanumerics with underscore
+    .replace(/_+/g, '_')         // collapse multiple underscores
+    .replace(/^_+|_+$/g, '');    // trim leading/trailing underscores
+}
+
 function renderVenueCard(venue, index) {
   const card = document.createElement('div');
   card.className =
@@ -553,14 +562,14 @@ function renderVenueCard(venue, index) {
   card.dataset.suburb = venue.suburb.toLowerCase();
   card.dataset.cuisine = venue.cuisine;
 
+  // List view image rendering logic
+  const venueKey = generateVenueKey(venue.name || venue.restaurantName || '');
+  const imagePath = venueKey ? `images/${venueKey}_1.jpg` : 'images/placeholder-brunch.jpg';
+  const imageTag = `<img src="${imagePath}" alt="${venue.name}" class="w-full h-32 object-cover rounded-t-lg" onerror="this.src='images/placeholder-brunch.jpg';" />`;
+
   card.innerHTML = `
 <div class="w-1/3 min-w-[96px] flex items-stretch">
-  <img class="rounded-lg object-cover w-full h-full"
-    src="/images/${venue.venueKey || (venue.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '_')}_1.jpg"
-    alt="${venue.name}"
-    onerror="this.onerror=null;this.src='images/placeholder-brunch.jpg';"
-    style="background:#f5f5f5;"
-  >
+  ${imageTag}
 </div>
       <div class="w-2/3 p-3 flex flex-col justify-between">
         <div class="flex justify-between items-start">
