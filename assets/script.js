@@ -19,6 +19,16 @@ let trapListener = null; // focus trap handler
 let suburbGroups = null; // loaded in init()
 let suburbGroupsWithOthers = null; // suburbGroups + "Others" group
 
+const cuisineIconMap = {
+  'Japanese': 'images/filterIcons/Japanese.png',
+  'Italian': 'images/filterIcons/Italian.png',
+  'Mexican': 'images/filterIcons/Maxican.png',
+  'French': 'images/filterIcons/French.png',
+  'Mediterranean': 'images/filterIcons/Mediterranean.png',
+  'Asian': 'images/filterIcons/Asian.png',
+  'Australian': 'images/filterIcons/Austrlian.png'
+};
+
 // Wait for DOM content to boot
 document.addEventListener('DOMContentLoaded', init);
 
@@ -82,15 +92,19 @@ function renderFilters() {
   cuisines.forEach(cuisine => {
     const isActive = filters.cuisines.has(cuisine);
     const btn = document.createElement('button');
-    btn.className = 'flex flex-col items-center space-y-1 flex-shrink-0 focus:outline-none min-w-[60px]';
+    btn.className = 'flex flex-col items-center flex-shrink-0 focus:outline-none min-w-[60px]';
     btn.setAttribute('aria-label', `${cuisine} cuisine filter`);
     btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-    btn.innerHTML = `
-      <div class="w-10 h-10 bg-gray-100 border border-gray-300 rounded-full flex items-center justify-center shadow-sm">
-        <span class="material-icons ${isActive ? 'text-red-500' : 'text-gray-600'}">restaurant</span>
-      </div>
-      <span class="text-[11px] ${isActive ? 'text-red-600 font-semibold' : 'text-gray-700'} text-center leading-tight">${cuisine}</span>
-    `;
+    const iconPath = cuisineIconMap[cuisine] || 'images/filterIcons/fallback-icon.png';
+    btn.innerHTML = isActive
+      ? `
+        <img src="${iconPath}" alt="${cuisine}" class="w-20 h-20 object-contain animate-[swing_3s_ease-in-out_infinite]" />
+        <span class="text-xs text-red-600 font-semibold text-center leading-tight">${cuisine}</span>
+      `
+      : `
+        <img src="${iconPath}" alt="${cuisine}" class="w-20 h-20 object-contain" />
+        <span class="text-xs text-gray-700 text-center leading-tight">${cuisine}</span>
+      `;
     btn.addEventListener('click', () => {
       // Toggle logic for cuisines set (no "All")
       if (filters.cuisines.has(cuisine)) {

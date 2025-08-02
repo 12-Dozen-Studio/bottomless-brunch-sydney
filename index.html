@@ -7,6 +7,12 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     /* (No custom CSS needed for filter-panel top override; now handled by Tailwind utility class in panel HTML) */
+    @keyframes swing {
+      0% { transform: rotate(0deg); }
+      25% { transform: rotate(10deg); }
+      75% { transform: rotate(-10deg); }
+      100% { transform: rotate(0deg); }
+    }
   </style>
 </head>
 <body class="bg-white text-gray-800 font-sans">
@@ -16,7 +22,7 @@
     <!-- Sticky Explore Venues Header + Filter Row -->
     <div class="sticky top-0 z-30 bg-white">
       <!-- Header -->
-      <header class="shadow-sm p-4 flex justify-between items-center">
+      <header class="shadow-sm pt-4 pr-4 pl-4 pb-0 flex justify-between items-center">
         <div class="pt-1 leading-none">
           <div class="text-xl font-bold leading-tight">Bottomless Brunch</div>
           <div class="text-sm font-light text-gray-600 leading-snug">Sydney</div>
