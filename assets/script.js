@@ -682,7 +682,7 @@ async function renderModal(venue, index) {
     )
     .join('');
 
-  // Map Section: Use Nominatim geocoding and OSM embed
+  // Map Section: Use Nominatim geocoding and OSM embed, but replace OSM link with Google Maps search
   let mapSection = '';
   if (venue.address) {
     try {
@@ -691,6 +691,17 @@ async function renderModal(venue, index) {
       const data = await response.json();
       if (data.length > 0) {
         const { lat, lon } = data[0];
+        // Determine the best label for the Google Maps query
+        let gmapsQuery = '';
+        if (venue.restaurantName && venue.suburb) {
+          gmapsQuery = `${venue.restaurantName} ${venue.suburb}, Australia`;
+        } else if (venue.name && venue.suburb) {
+          gmapsQuery = `${venue.name} ${venue.suburb}, Australia`;
+        } else if (venue.address) {
+          gmapsQuery = `${venue.address}, Australia`;
+        } else if (venue.name) {
+          gmapsQuery = `${venue.name}, Australia`;
+        }
         const mapIframe = `
           <iframe
             width="100%"
@@ -700,7 +711,7 @@ async function renderModal(venue, index) {
             src="https://www.openstreetmap.org/export/embed.html?bbox=${lon - 0.002},${lat - 0.001},${+lon + 0.002},${+lat + 0.001}&marker=${lat},${lon}"
             style="border:1px solid #ccc; border-radius: 8px;">
           </iframe>
-          <a target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=17/${lat}/${lon}" class="text-sm text-blue-600 underline block mt-1">Open in OSM</a>
+          <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(gmapsQuery)}" class="text-sm text-blue-600 underline block mt-1">Open in Google Maps</a>
           <p class="text-sm text-gray-600 mt-1">${venue.address}</p>
         `;
         mapSection = `<div class="mt-2">${mapIframe}</div>`;
