@@ -508,20 +508,20 @@ function formatDays(days) {
     Saturday: 'Sat',
     Sunday: 'Sun'
   };
-  const allDays = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   const daysShort = days.map(d => dayMap[d] || d);
   // Detect daily
   if (days.length === 7 || allDays.every(d => days.includes(d))) return 'Daily';
   // Detect Fri–Sun or Tue–Thu etc
-  const idxs = days.map(d => allDays.indexOf(d)).sort((a,b)=>a-b);
+  const idxs = days.map(d => allDays.indexOf(d)).sort((a, b) => a - b);
   // Check if days are a contiguous block
   if (idxs.length > 1) {
     let contiguous = true;
     for (let i = 1; i < idxs.length; i++) {
-      if (idxs[i] !== idxs[i-1]+1) { contiguous = false; break; }
+      if (idxs[i] !== idxs[i - 1] + 1) { contiguous = false; break; }
     }
     if (contiguous) {
-      return `${dayMap[allDays[idxs[0]]]} – ${dayMap[allDays[idxs[idxs.length-1]]]}`;
+      return `${dayMap[allDays[idxs[0]]]} – ${dayMap[allDays[idxs[idxs.length - 1]]]}`;
     }
   }
   // If two days, join with &
@@ -554,9 +554,14 @@ function renderVenueCard(venue, index) {
   card.dataset.cuisine = venue.cuisine;
 
   card.innerHTML = `
-      <div class="w-1/3">
-        <img class="w-full h-full object-cover" src="${(venue.imageUrl && venue.imageUrl[0]) || 'images/placeholder-brunch.jpg'}" alt="${venue.name}">
-      </div>
+<div class="w-1/3 min-w-[96px] flex items-stretch">
+  <img class="rounded-lg object-cover w-full h-full"
+    src="/images/${venue.venueKey || (venue.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '_')}_1.jpg"
+    alt="${venue.name}"
+    onerror="this.onerror=null;this.src='images/placeholder-brunch.jpg';"
+    style="background:#f5f5f5;"
+  >
+</div>
       <div class="w-2/3 p-3 flex flex-col justify-between">
         <div class="flex justify-between items-start">
           <div>
@@ -671,10 +676,10 @@ async function renderModal(venue, index) {
   const images = (venue.imageUrl && venue.imageUrl.length
     ? venue.imageUrl
     : [
-        'images/placeholder-brunch.jpg',
-        'images/placeholder-crowd.jpg',
-        'images/placeholder-drinks.jpg'
-      ]
+      'images/placeholder-brunch.jpg',
+      'images/placeholder-crowd.jpg',
+      'images/placeholder-drinks.jpg'
+    ]
   )
     .map(
       src =>
@@ -797,7 +802,7 @@ function updateFavoriteIcons(index) {
 // ---------- Bottom Navigation ----------
 function renderBottomNav() {
   const nav = document.getElementById('bottomNav');
-nav.innerHTML = `
+  nav.innerHTML = `
   <nav class="bottom-nav bg-white border-t border-gray-200 shadow-sm" role="navigation">
     <div class="max-w-screen-sm mx-auto flex justify-between px-6 py-2">
         <!-- Home -->
