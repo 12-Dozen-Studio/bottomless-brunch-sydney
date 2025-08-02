@@ -673,15 +673,21 @@ function closeModal() {
 }
 
 async function renderModal(venue, index) {
-  const imageNamePrefix = (venue.restaurantName || venue.name || 'placeholder')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
-
-  const images = [1, 2, 3].map(i => {
-    const imagePath = `images/${imageNamePrefix}_${i}.jpg`;
-    return `<img src="${imagePath}" alt="${venue.name}" class="w-full h-24 object-cover rounded" onerror="this.src='images/placeholder-${['brunch', 'crowd', 'drinks'][i-1]}.jpg';" />`;
-  }).join('');
+  // Modal images with lightbox support
+  const images = (venue.imageUrl && venue.imageUrl.length
+    ? venue.imageUrl.map(
+        src =>
+          `<img src="${src}" alt="${venue.name}" class="w-full h-24 object-cover rounded cursor-pointer" data-lightbox loading="lazy" />`
+      )
+    : [
+        'images/placeholder-brunch.jpg',
+        'images/placeholder-crowd.jpg',
+        'images/placeholder-drinks.jpg'
+      ].map(
+        src =>
+          `<img src="${src}" alt="${venue.name}" class="w-full h-24 object-cover rounded cursor-pointer" data-lightbox loading="lazy" />`
+      )
+  ).join('');
 
   // Map Section: Use Nominatim geocoding and OSM embed, but replace OSM link with Google Maps search
   let mapSection = '';
@@ -754,6 +760,60 @@ async function renderModal(venue, index) {
   </div>`;
 }
 
+// --------- Lightbox Modal for Images ----------
+function openLightbox(imageUrls, startIndex = 0) {
+  let currentIndex = startIndex;
+
+  const lightboxContainer = document.createElement('div');
+  lightboxContainer.className = 'fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50';
+  lightboxContainer.style.cursor = 'pointer';
+  lightboxContainer.style.position = 'fixed';
+  lightboxContainer.style.top = '0';
+  lightboxContainer.style.left = '0';
+  lightboxContainer.style.width = '100vw';
+  lightboxContainer.style.height = '100vh';
+
+  // Image element
+  const lightboxImg = document.createElement('img');
+  lightboxImg.src = imageUrls[currentIndex];
+  lightboxImg.alt = '';
+  lightboxImg.className = 'max-w-full max-h-full rounded shadow-lg';
+  lightboxImg.style.pointerEvents = 'auto';
+
+  // Prev button
+  const prevButton = document.createElement('button');
+  prevButton.innerHTML = '&#10094;'; // Left arrow
+  prevButton.className = 'absolute left-2 top-1/2 transform -translate-y-1/2 bg-white text-black rounded-full w-8 h-8 flex items-center justify-center shadow-md';
+  prevButton.addEventListener('click', (e) => {
+    e.stopPropagation();
+    currentIndex = (currentIndex - 1 + imageUrls.length) % imageUrls.length;
+    lightboxImg.src = imageUrls[currentIndex];
+  });
+
+  // Next button
+  const nextButton = document.createElement('button');
+  nextButton.innerHTML = '&#10095;'; // Right arrow
+  nextButton.className = 'absolute right-2 top-1/2 transform -translate-y-1/2 bg-white text-black rounded-full w-8 h-8 flex items-center justify-center shadow-md';
+  nextButton.addEventListener('click', (e) => {
+    e.stopPropagation();
+    currentIndex = (currentIndex + 1) % imageUrls.length;
+    lightboxImg.src = imageUrls[currentIndex];
+  });
+
+  lightboxContainer.onclick = () => lightboxContainer.remove();
+
+  lightboxContainer.appendChild(lightboxImg);
+  lightboxContainer.appendChild(prevButton);
+  lightboxContainer.appendChild(nextButton);
+  document.body.appendChild(lightboxContainer);
+}
+
+function closeLightbox() {
+  const lightbox = document.getElementById('lightbox');
+  lightbox.classList.add('hidden');
+  document.getElementById('lightboxImg').src = '';
+}
+
 function renderModalPackage(pkg) {
   return `
     <div>
@@ -820,6 +880,20 @@ function renderBottomNav() {
     </nav>
   `;
 }
+
+
+// ------------- Lightbox Handler (delegated) -------------
+document.addEventListener('click', function (e) {
+  if (e.target.matches('[data-lightbox]')) {
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[9999]';
+    overlay.innerHTML = `
+      <img src="${e.target.src}" class="max-w-full max-h-full rounded-lg shadow-lg" />
+    `;
+    overlay.addEventListener('click', () => document.body.removeChild(overlay));
+    document.body.appendChild(overlay);
+  }
+});
 
 
 // ---------- Available Day Panel ----------
