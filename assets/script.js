@@ -542,8 +542,8 @@ function renderVenues(venues) {
 }
 
 // Helper function to generate venueKey from venue name (matches Python script logic)
-function generateVenueKey(name) {
-  return name
+function getVenueKey(name) {
+  return (name || '')
     .toLowerCase()
     .replace(/[^a-z0-9]/g, '_')  // replace non-alphanumerics with underscore
     .replace(/_+/g, '_')         // collapse multiple underscores
@@ -563,7 +563,7 @@ function renderVenueCard(venue, index) {
   card.dataset.cuisine = venue.cuisine;
 
   // List view image rendering logic
-  const venueKey = generateVenueKey(venue.name || venue.restaurantName || '');
+  const venueKey = getVenueKey(venue.name || venue.restaurantName || '');
   const imagePath = venueKey ? `images/${venueKey}_1.jpg` : 'images/placeholder-brunch.jpg';
   const imageTag = `<img src="${imagePath}" alt="${venue.name}" class="w-full h-32 object-cover rounded-t-lg" onerror="this.src='images/placeholder-brunch.jpg';" />`;
 
@@ -683,20 +683,31 @@ function closeModal() {
 
 async function renderModal(venue, index) {
   // Modal images with lightbox support
-  const images = (venue.imageUrl && venue.imageUrl.length
-    ? venue.imageUrl.map(
-        src =>
-          `<img src="${src}" alt="${venue.name}" class="w-full h-24 object-cover rounded cursor-pointer" data-lightbox loading="lazy" />`
-      )
-    : [
-        'images/placeholder-brunch.jpg',
-        'images/placeholder-crowd.jpg',
-        'images/placeholder-drinks.jpg'
-      ].map(
-        src =>
-          `<img src="${src}" alt="${venue.name}" class="w-full h-24 object-cover rounded cursor-pointer" data-lightbox loading="lazy" />`
-      )
-  ).join('');
+  let images = '';
+  if (venue.imageUrl && venue.imageUrl.length) {
+    images = venue.imageUrl.map(
+      src =>
+        `<img src="${src}" alt="${venue.name}" class="w-full h-24 object-cover rounded cursor-pointer" data-lightbox loading="lazy" />`
+    ).join('');
+  } else {
+    // Use fallback images based on venueKey if available
+    const venueKey = getVenueKey(venue.name || venue.restaurantName || '');
+    const fallbackImgs = venueKey
+      ? [
+          `images/${venueKey}_1.jpg`,
+          `images/${venueKey}_2.jpg`,
+          `images/${venueKey}_3.jpg`
+        ]
+      : [
+          'images/placeholder-brunch.jpg',
+          'images/placeholder-crowd.jpg',
+          'images/placeholder-drinks.jpg'
+        ];
+    images = fallbackImgs.map(
+      src =>
+        `<img src="${src}" alt="${venue.name}" class="w-full h-24 object-cover rounded cursor-pointer" data-lightbox loading="lazy" onerror="this.src='images/placeholder-brunch.jpg';" />`
+    ).join('');
+  }
 
   // Map Section: Use Nominatim geocoding and OSM embed, but replace OSM link with Google Maps search
   let mapSection = '';
