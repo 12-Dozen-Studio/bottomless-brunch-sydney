@@ -607,10 +607,10 @@ function renderPackageRow(pkg) {
 }
 
 // ---------- Modal Handling ----------
-function openModal(venue, index) {
+async function openModal(venue, index) {
   lastFocused = document.activeElement;
   const container = document.getElementById('modalContainer');
-  container.innerHTML = renderModal(venue, index);
+  container.innerHTML = await renderModal(venue, index);
   const modal = container.querySelector('.modal');
   const backdrop = container.querySelector('[data-close]');
 
@@ -667,7 +667,7 @@ function closeModal() {
   }, 300);
 }
 
-function renderModal(venue, index) {
+async function renderModal(venue, index) {
   const images = (venue.imageUrl && venue.imageUrl.length
     ? venue.imageUrl
     : [
@@ -682,19 +682,33 @@ function renderModal(venue, index) {
     )
     .join('');
 
-  const mapSrc = `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(
-    venue.address || venue.suburb
-  )}&zoom=15&size=600x200&markers=${encodeURIComponent(venue.address || venue.suburb)}`;
-  const mapSection = venue.address
-    ? `
-      <div class="mt-2">
-        <img src="${mapSrc}" alt="Map of ${venue.address}" class="w-full h-32 object-cover rounded" />
-        <a target="_blank" rel="noopener" href="https://www.google.com/maps?q=${encodeURIComponent(
-          venue.address
-        )}" class="text-sm text-blue-600 underline block mt-1">Open in Maps</a>
-        <p class="text-sm text-gray-600 mt-1">${venue.address}</p>
-      </div>`
-    : '';
+  // Map Section: Use Nominatim geocoding and OSM embed
+  let mapSection = '';
+  if (venue.address) {
+    try {
+      const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(venue.address)}`;
+      const response = await fetch(nominatimUrl);
+      const data = await response.json();
+      if (data.length > 0) {
+        const { lat, lon } = data[0];
+        const mapIframe = `
+          <iframe
+            width="100%"
+            height="200"
+            frameborder="0"
+            scrolling="no"
+            src="https://www.openstreetmap.org/export/embed.html?bbox=${lon - 0.002},${lat - 0.001},${+lon + 0.002},${+lat + 0.001}&marker=${lat},${lon}"
+            style="border:1px solid #ccc; border-radius: 8px;">
+          </iframe>
+          <a target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=17/${lat}/${lon}" class="text-sm text-blue-600 underline block mt-1">Open in OSM</a>
+          <p class="text-sm text-gray-600 mt-1">${venue.address}</p>
+        `;
+        mapSection = `<div class="mt-2">${mapIframe}</div>`;
+      }
+    } catch (error) {
+      console.error('Error fetching coordinates from Nominatim:', error);
+    }
+  }
 
   const packageList = venue.packages && venue.packages.length
     ? venue.packages.map(renderModalPackage).join('')
