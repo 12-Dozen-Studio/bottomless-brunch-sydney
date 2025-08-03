@@ -208,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     group.appendChild(suburbBtn);
 
-    // Available Day
+    // Day
     const dayBtn = document.createElement('button');
     dayBtn.type = 'button';
     dayBtn.id = 'dayFilterBtn';
@@ -219,10 +219,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const dayActive = dayCount > 0;
     if (dayActive) {
       dayBtn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border-red-300');
-      dayBtn.textContent = `Available Day (${dayCount})`;
+      dayBtn.textContent = `Day (${dayCount})`;
     } else {
       dayBtn.classList.remove('text-red-600', 'font-semibold', 'border-red-300');
-      dayBtn.textContent = 'Available Day';
+      dayBtn.textContent = 'Day';
     }
     dayBtn.addEventListener('click', () => {
       renderAvailableDayPanel();
@@ -332,55 +332,102 @@ function bindPricePillClicks() {
   });
 }
 
+// ---------- Reusable Checkbox/Radio Row ----------
+function renderFilterCheckboxRow(labelText, description = '', isChecked = false, isSingleChoice = false, onChange) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'w-full';
+
+  const inputId = 'filter_' + labelText.replace(/\s+/g, '_') + '_' + Math.random().toString(36).slice(2, 7);
+  const input = document.createElement('input');
+  input.type = isSingleChoice ? 'radio' : 'checkbox';
+  input.id = inputId;
+  input.className = 'sr-only';
+  input.checked = isChecked;
+  if (isSingleChoice) input.name = 'singleChoice';
+  wrapper.appendChild(input);
+
+  const label = document.createElement('label');
+  label.setAttribute('for', inputId);
+  label.className = 'flex w-full cursor-pointer items-start gap-3 p-3 rounded-lg transition-colors hover:bg-gray-100 active:bg-gray-100';
+
+  let descriptionHTML = '';
+  if (Array.isArray(description) && description.length > 0) {
+    descriptionHTML = `<div class="flex flex-wrap items-center gap-1"><span class="font-semibold text-sm text-gray-800 mr-1">${labelText}</span>` +
+      description.map(s => `<span class="text-xs text-gray-600 bg-gray-100 rounded-full px-2 py-0.5">${s}</span>`).join('') +
+      '</div>';
+  } else {
+    descriptionHTML = `
+      <span class="font-semibold text-sm text-gray-800">${labelText}</span>
+      ${description ? `<span class="text-xs text-gray-600 font-light">${description}</span>` : ''}
+    `;
+  }
+
+  label.innerHTML = `
+    <div class="checkbox-box flex items-center justify-center w-5 h-5 rounded border border-gray-300 bg-white">
+      <svg class="check-icon h-3.5 w-3.5 text-white hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" stroke="currentColor" stroke-width="1">
+        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+      </svg>
+      <span class="dash-icon w-2 h-0.5 bg-white hidden"></span>
+    </div>
+    <div class="flex flex-col flex-1">
+      ${descriptionHTML}
+    </div>
+  `;
+  wrapper.appendChild(label);
+
+  const box = label.querySelector('.checkbox-box');
+  const checkIcon = label.querySelector('.check-icon');
+  const dashIcon = label.querySelector('.dash-icon');
+
+  function updateState() {
+    if (input.checked) {
+      box.classList.add('bg-gray-800', 'border-gray-800');
+      checkIcon.classList.remove('hidden');
+      dashIcon.classList.add('hidden');
+      label.classList.add('bg-gray-100');
+    } else if (input.indeterminate) {
+      box.classList.add('bg-gray-800', 'border-gray-800');
+      checkIcon.classList.add('hidden');
+      dashIcon.classList.remove('hidden');
+      label.classList.remove('bg-gray-100');
+    } else {
+      box.classList.remove('bg-gray-800', 'border-gray-800');
+      checkIcon.classList.add('hidden');
+      dashIcon.classList.add('hidden');
+      label.classList.remove('bg-gray-100');
+    }
+  }
+
+  updateState();
+
+  input.addEventListener('change', e => {
+    input.indeterminate = false;
+    updateState();
+    if (onChange) onChange(e.target);
+  });
+
+  input._updateState = updateState;
+
+  return { wrapper, input };
+}
+
 // ---------- Suburb Panel ----------
 function renderSuburbPanelContent(panelContent) {
-  // Remove previous content
   panelContent.innerHTML = '';
   const groupEntries = Object.entries(suburbGroupsWithOthers);
   groupEntries.forEach(([group, suburbs], idx) => {
     const groupDiv = document.createElement('div');
-    // Add vertical padding and bottom border except last item
     groupDiv.className = 'py-3' + (idx < groupEntries.length - 1 ? ' border-b border-gray-200' : '');
-    // Group-level checkbox
-    const groupId = 'suburb_group_' + group.replace(/\s+/g, '_');
-    const label = document.createElement('label');
-    // Use consistent bold text style for checkbox label
-    label.className = 'inline-flex items-center cursor-pointer font-semibold text-sm';
-    // Checkbox checked if ALL suburbs in group are in filters.suburbs
+
     const allChecked = suburbs.length > 0 && suburbs.every(s => filters.suburbs.has(s));
     const someChecked = suburbs.some(s => filters.suburbs.has(s));
-    const input = document.createElement('input');
-    input.type = 'checkbox';
-    input.value = group;
-    input.className = 'mr-2 accent-red-500';
-    input.id = groupId;
-    input.checked = allChecked;
-    // Indeterminate state for partial selection
-    if (!allChecked && someChecked) {
-      input.indeterminate = true;
-    }
-    label.appendChild(input);
-    // Group title
-    const groupTitle = document.createElement('span');
-    groupTitle.className = ''; // Already styled on label
-    groupTitle.textContent = group;
-    label.appendChild(groupTitle);
-    groupDiv.appendChild(label);
-    // Suburb list (display only)
-    const suburbList = document.createElement('div');
-    // Reduce font size to match cuisine label: text-[11px]
-    suburbList.className = 'text-[11px] text-gray-500 font-light ml-6 mt-1';
-    suburbList.textContent = suburbs.join(', ');
-    groupDiv.appendChild(suburbList);
-    panelContent.appendChild(groupDiv);
-    // Event: group checkbox toggles all suburbs in group
-    input.addEventListener('change', e => {
-      if (e.target.checked) {
+
+    const { wrapper, input } = renderFilterCheckboxRow(group, suburbs, allChecked, false, el => {
+      if (el.checked) {
         suburbs.forEach(s => filters.suburbs.add(s));
       } else {
         suburbs.forEach(s => filters.suburbs.delete(s));
       }
-      // Instead of re-rendering the entire panel, update checkbox states only
       const checkboxes = panelContent.querySelectorAll('input[type="checkbox"]');
       checkboxes.forEach(cb => {
         const groupName = cb.value;
@@ -389,8 +436,19 @@ function renderSuburbPanelContent(panelContent) {
         const someChecked = groupSuburbs.some(s => filters.suburbs.has(s));
         cb.checked = allChecked;
         cb.indeterminate = !allChecked && someChecked;
+        if (cb._updateState) cb._updateState();
       });
     });
+
+    input.value = group;
+    input.classList.add('suburb-checkbox');
+    if (!allChecked && someChecked) {
+      input.indeterminate = true;
+      if (input._updateState) input._updateState();
+    }
+
+    groupDiv.appendChild(wrapper);
+    panelContent.appendChild(groupDiv);
   });
 }
 
@@ -442,7 +500,10 @@ function renderSuburbPanel() {
   // Event: reset
   panel.querySelector('#resetSuburbBtn').addEventListener('click', () => {
     // Uncheck all suburb checkboxes if present in DOM
-    document.querySelectorAll('.suburb-checkbox').forEach(cb => cb.checked = false);
+    document.querySelectorAll('.suburb-checkbox').forEach(cb => {
+      cb.checked = false;
+      if (cb._updateState) cb._updateState();
+    });
     filters.suburbs.clear();
     renderFilters();
     filterVenues(); // Update results immediately
@@ -925,7 +986,6 @@ document.addEventListener('click', function (e) {
 
 // ---------- Available Day Panel ----------
 function renderAvailableDayPanelContent(panelContent) {
-  // Remove previous content
   panelContent.innerHTML = '';
   const daysOfWeek = [
     'Monday',
@@ -937,30 +997,19 @@ function renderAvailableDayPanelContent(panelContent) {
     'Sunday'
   ];
   daysOfWeek.forEach((day, idx) => {
-    const div = document.createElement('div');
-    // Add vertical padding and border except last item
-    div.className = 'flex items-center py-3' + (idx < daysOfWeek.length - 1 ? ' border-b border-gray-200' : '');
-    const input = document.createElement('input');
-    input.type = 'checkbox';
-    input.value = day;
-    input.className = 'accent-red-500 mr-2';
-    input.id = 'day_cb_' + day;
-    input.checked = filters.days.has(day);
-    input.addEventListener('change', e => {
-      if (e.target.checked) {
+    const rowDiv = document.createElement('div');
+    rowDiv.className = 'py-3' + (idx < daysOfWeek.length - 1 ? ' border-b border-gray-200' : '');
+    const { wrapper, input } = renderFilterCheckboxRow(day, '', filters.days.has(day), false, el => {
+      if (el.checked) {
         filters.days.add(day);
       } else {
         filters.days.delete(day);
       }
     });
-    const label = document.createElement('label');
-    label.htmlFor = input.id;
-    // Use same bold class as Suburb panel: font-semibold text-sm
-    label.className = 'font-semibold text-sm text-gray-800 cursor-pointer';
-    label.textContent = day;
-    div.appendChild(input);
-    div.appendChild(label);
-    panelContent.appendChild(div);
+    input.classList.add('day-checkbox');
+    input.value = day;
+    rowDiv.appendChild(wrapper);
+    panelContent.appendChild(rowDiv);
   });
 }
 
@@ -990,7 +1039,7 @@ function renderAvailableDayPanel() {
   // Panel content structure
   panel.innerHTML = `
     <div class="flex justify-between items-center pb-2 px-4 pt-4">
-      <h2 id="availableDayPanelTitle" class="text-lg font-semibold text-center w-full">Available Day</h2>
+      <h2 id="availableDayPanelTitle" class="text-lg font-semibold text-center w-full">Day</h2>
       <button type="button" class="text-gray-400 absolute right-6" aria-label="Close available day panel" id="closeAvailableDayPanelBtn">
         <span class="material-icons">close</span>
       </button>
@@ -1010,7 +1059,10 @@ function renderAvailableDayPanel() {
   panel.querySelector('#closeAvailableDayPanelBtn').addEventListener('click', closeAvailableDayPanel);
   // Event: reset (clear day checkboxes, clear filters, update results, and close panel)
   panel.querySelector('#resetAvailableDayBtn').addEventListener('click', () => {
-    document.querySelectorAll('.day-checkbox').forEach(cb => cb.checked = false);
+    document.querySelectorAll('.day-checkbox').forEach(cb => {
+      cb.checked = false;
+      if (cb._updateState) cb._updateState();
+    });
     filters.days.clear();
     renderFilters();
     filterVenues(); // Update results immediately
