@@ -208,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     group.appendChild(suburbBtn);
 
-    // Available Day
+    // Day
     const dayBtn = document.createElement('button');
     dayBtn.type = 'button';
     dayBtn.id = 'dayFilterBtn';
@@ -219,10 +219,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const dayActive = dayCount > 0;
     if (dayActive) {
       dayBtn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border-red-300');
-      dayBtn.textContent = `Available Day (${dayCount})`;
+      dayBtn.textContent = `Day (${dayCount})`;
     } else {
       dayBtn.classList.remove('text-red-600', 'font-semibold', 'border-red-300');
-      dayBtn.textContent = 'Available Day';
+      dayBtn.textContent = 'Day';
     }
     dayBtn.addEventListener('click', () => {
       renderAvailableDayPanel();
@@ -343,37 +343,47 @@ function renderSuburbPanelContent(panelContent) {
     groupDiv.className = 'py-3' + (idx < groupEntries.length - 1 ? ' border-b border-gray-200' : '');
     // Group-level checkbox
     const groupId = 'suburb_group_' + group.replace(/\s+/g, '_');
-    const label = document.createElement('label');
-    // Use consistent bold text style for checkbox label
-    label.className = 'inline-flex items-center cursor-pointer font-semibold text-sm';
     // Checkbox checked if ALL suburbs in group are in filters.suburbs
     const allChecked = suburbs.length > 0 && suburbs.every(s => filters.suburbs.has(s));
     const someChecked = suburbs.some(s => filters.suburbs.has(s));
-    const input = document.createElement('input');
-    input.type = 'checkbox';
-    input.value = group;
-    input.className = 'mr-2 accent-red-500';
-    input.id = groupId;
-    input.checked = allChecked;
+
+    // --- Combined clickable wrapper for checkbox and suburb list ---
+    const combinedWrapper = document.createElement('div');
+    combinedWrapper.className = 'flex flex-col w-full items-start rounded-lg transition-all hover:bg-gray-100 focus:bg-gray-100 active:bg-gray-100 cursor-pointer px-3 py-2';
+
+    // Make sure group title is clickable and does NOT stop propagation
+    const label = document.createElement('label');
+    label.setAttribute('for', groupId);
+    label.className = 'flex w-full cursor-pointer items-center';
+    // Remove pointer-events: none or tabindex from title (not present here, but ensure not added)
+    label.innerHTML = `
+      <div class="inline-flex items-center relative w-5 h-5">
+        <input type="checkbox" id="${groupId}" value="${group}" ${allChecked ? 'checked' : ''} class="peer h-5 w-5 appearance-none rounded border border-gray-300 checked:bg-gray-800 checked:border-gray-800 shadow hover:shadow-md" />
+        <span class="absolute inset-0 flex items-center justify-center text-white opacity-0 peer-checked:opacity-100 pointer-events-none">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" stroke="currentColor" stroke-width="1">
+            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+          </svg>
+        </span>
+      </div>
+      <span class="ml-3 font-semibold text-sm text-gray-800">${group}</span>
+    `;
+    combinedWrapper.appendChild(label);
+
+    // Suburb list (display only)
+    const suburbList = document.createElement('div');
+    suburbList.className = 'text-[11px] text-gray-600 font-light ml-8 mt-1';
+    suburbList.textContent = suburbs.join(', ');
+    combinedWrapper.appendChild(suburbList);
+
+    groupDiv.appendChild(combinedWrapper);
+    panelContent.appendChild(groupDiv);
+
+    // Event: group checkbox toggles all suburbs in group
+    const input = label.querySelector('input[type="checkbox"]');
     // Indeterminate state for partial selection
     if (!allChecked && someChecked) {
       input.indeterminate = true;
     }
-    label.appendChild(input);
-    // Group title
-    const groupTitle = document.createElement('span');
-    groupTitle.className = ''; // Already styled on label
-    groupTitle.textContent = group;
-    label.appendChild(groupTitle);
-    groupDiv.appendChild(label);
-    // Suburb list (display only)
-    const suburbList = document.createElement('div');
-    // Reduce font size to match cuisine label: text-[11px]
-    suburbList.className = 'text-[11px] text-gray-500 font-light ml-6 mt-1';
-    suburbList.textContent = suburbs.join(', ');
-    groupDiv.appendChild(suburbList);
-    panelContent.appendChild(groupDiv);
-    // Event: group checkbox toggles all suburbs in group
     input.addEventListener('change', e => {
       if (e.target.checked) {
         suburbs.forEach(s => filters.suburbs.add(s));
@@ -390,6 +400,14 @@ function renderSuburbPanelContent(panelContent) {
         cb.checked = allChecked;
         cb.indeterminate = !allChecked && someChecked;
       });
+    });
+
+    // Make combinedWrapper clickable to toggle the checkbox and update filters
+    combinedWrapper.addEventListener('click', e => {
+      // If clicking the input directly, let default happen
+      if (e.target.tagName.toLowerCase() === 'input') return;
+      input.checked = !input.checked;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
     });
   });
 }
@@ -937,15 +955,48 @@ function renderAvailableDayPanelContent(panelContent) {
     'Sunday'
   ];
   daysOfWeek.forEach((day, idx) => {
-    const div = document.createElement('div');
-    // Add vertical padding and border except last item
-    div.className = 'flex items-center py-3' + (idx < daysOfWeek.length - 1 ? ' border-b border-gray-200' : '');
-    const input = document.createElement('input');
-    input.type = 'checkbox';
-    input.value = day;
-    input.className = 'accent-red-500 mr-2';
-    input.id = 'day_cb_' + day;
-    input.checked = filters.days.has(day);
+    // Material Tailwind-style checkbox row
+    const inputId = 'day_cb_' + day;
+    const combinedWrapper = document.createElement('div');
+    combinedWrapper.className = 'w-full h-full flex items-center rounded-lg p-0 transition-all hover:bg-gray-100 focus:bg-gray-100 active:bg-gray-100 cursor-pointer';
+    combinedWrapper.tabIndex = 0;
+    // Inner label/input
+    const label = document.createElement('label');
+    label.setAttribute('for', inputId);
+    label.className = 'flex w-full cursor-pointer items-center px-3 py-2';
+    // Remove pointer-events: none or tabindex from title (not present here, but ensure not added)
+    label.innerHTML = `
+      <div class="inline-flex items-center relative w-5 h-5">
+        <input type="checkbox" id="${inputId}" value="${day}" ${filters.days.has(day) ? 'checked' : ''} class="peer h-5 w-5 appearance-none rounded border border-gray-300 checked:bg-gray-800 checked:border-gray-800 shadow hover:shadow-md" />
+        <span class="absolute inset-0 flex items-center justify-center text-white opacity-0 peer-checked:opacity-100 pointer-events-none">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" stroke="currentColor" stroke-width="1">
+            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+          </svg>
+        </span>
+      </div>
+      <span class="ml-3 font-semibold text-sm text-gray-800">${day}</span>
+    `;
+    combinedWrapper.appendChild(label);
+    panelContent.appendChild(combinedWrapper);
+    // Find the input
+    const input = label.querySelector('input[type="checkbox"]');
+    // Wrapper click toggles checkbox
+    combinedWrapper.addEventListener('click', function (e) {
+      // Prevent double-toggling if the click was on the input itself
+      if (e.target.tagName.toLowerCase() === 'input') return;
+      input.checked = !input.checked;
+      // Manually trigger change event
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    // Keyboard accessibility for wrapper
+    combinedWrapper.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        input.checked = !input.checked;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    });
+    // Listen for changes to update filters
     input.addEventListener('change', e => {
       if (e.target.checked) {
         filters.days.add(day);
@@ -953,14 +1004,6 @@ function renderAvailableDayPanelContent(panelContent) {
         filters.days.delete(day);
       }
     });
-    const label = document.createElement('label');
-    label.htmlFor = input.id;
-    // Use same bold class as Suburb panel: font-semibold text-sm
-    label.className = 'font-semibold text-sm text-gray-800 cursor-pointer';
-    label.textContent = day;
-    div.appendChild(input);
-    div.appendChild(label);
-    panelContent.appendChild(div);
   });
 }
 
@@ -990,7 +1033,7 @@ function renderAvailableDayPanel() {
   // Panel content structure
   panel.innerHTML = `
     <div class="flex justify-between items-center pb-2 px-4 pt-4">
-      <h2 id="availableDayPanelTitle" class="text-lg font-semibold text-center w-full">Available Day</h2>
+      <h2 id="availableDayPanelTitle" class="text-lg font-semibold text-center w-full">Day</h2>
       <button type="button" class="text-gray-400 absolute right-6" aria-label="Close available day panel" id="closeAvailableDayPanelBtn">
         <span class="material-icons">close</span>
       </button>
