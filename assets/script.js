@@ -12,7 +12,7 @@
 let venuesData = [];
 const favorites = new Set(JSON.parse(localStorage.getItem('favorites') || '[]'));
 // Add suburbs filter as a Set for multi-select
-const filters = { search: '', cuisines: new Set(), suburbs: new Set(), days: new Set(), price: null };
+const filters = { search: '', cuisines: new Set(), suburbs: new Set(), days: new Set(), price: new Set() };
 let venueCards = []; // { el, index }
 let lastFocused = null; // element to restore focus after modal close
 let trapListener = null; // focus trap handler
@@ -29,6 +29,35 @@ const cuisineIconMap = {
   'Asian': 'images/filterIcons/Asian.png',
   'Australian': 'images/filterIcons/Austrlian.png'
 };
+
+// ---------- UI Helpers ----------
+function buildPill(id, label, count, active, onClick, shortLabel = '') {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.id = id;
+  btn.className = 'filter-pill' + (active ? ' active' : '');
+  btn.setAttribute('aria-haspopup', 'dialog');
+  btn.setAttribute('aria-expanded', 'false');
+  const full = count > 0 ? `${label} (${count})` : label;
+  const short = shortLabel || (count > 0 ? `${label[0]}(${count})` : label[0]);
+  btn.innerHTML = `<span class="label" data-full="${full}" data-short="${short}">${full}</span><span class="chevron">▼</span>`;
+  btn.addEventListener('click', () => {
+    onClick();
+    btn.setAttribute('aria-expanded', 'true');
+  });
+  return btn;
+}
+
+function adjustPillLabels() {
+  const narrow = window.innerWidth < 360;
+  document.querySelectorAll('.filter-pill .label').forEach(span => {
+    const full = span.dataset.full;
+    const short = span.dataset.short || full;
+    span.textContent = narrow ? short : full;
+  });
+}
+
+window.addEventListener('resize', adjustPillLabels);
 
 // Wait for DOM content to boot
 document.addEventListener('DOMContentLoaded', init);
@@ -150,45 +179,16 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
   // Second row: pill-style filters
-  // Clear the pillFilters container before rendering filter pills
   const pillFilters = document.getElementById('pillFilters');
   if (pillFilters) {
     pillFilters.innerHTML = '';
-    pillFilters.classList.add('flex-nowrap');
-
-    // Group first three pills so Sort can stay right-aligned
-    const group = document.createElement('div');
-    group.className = 'flex gap-1 flex-nowrap';
 
     // Price
-    const priceBtn = document.createElement('button');
-    priceBtn.type = 'button';
-    priceBtn.id = 'priceFilterBtn';
-    priceBtn.setAttribute('aria-haspopup', 'dialog');
-    priceBtn.setAttribute('aria-expanded', 'false');
-    priceBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 focus:outline-none';
-    let priceActive = !!filters.price;
-    if (priceActive) {
-      priceBtn.classList.remove('bg-[#363636]', 'text-white', 'border-gray-200', 'text-gray-700');
-      priceBtn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border', 'border-red-300');
-      priceBtn.textContent = filters.price;
-    } else {
-      priceBtn.classList.remove('text-red-600', 'font-semibold', 'border-red-300');
-      priceBtn.textContent = 'Price';
-    }
-    priceBtn.addEventListener('click', () => {
-      renderPricePanel();
-      priceBtn.setAttribute('aria-expanded', 'true');
-    });
-    group.appendChild(priceBtn);
+    const priceCount = filters.price.size;
+    const priceBtn = buildPill('priceFilterBtn', 'Price', priceCount, priceCount > 0, renderPricePanel);
+    pillFilters.appendChild(priceBtn);
 
     // Suburb
-    const suburbBtn = document.createElement('button');
-    suburbBtn.type = 'button';
-    suburbBtn.id = 'suburbFilterBtn';
-    suburbBtn.setAttribute('aria-haspopup', 'dialog');
-    suburbBtn.setAttribute('aria-expanded', 'false');
-    suburbBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 focus:outline-none';
     let activeGroupCount = 0;
     if (filters.suburbs && filters.suburbs.size > 0 && suburbGroupsWithOthers) {
       activeGroupCount = Object.entries(suburbGroupsWithOthers).reduce((count, [group, suburbs]) => {
@@ -196,61 +196,21 @@ document.addEventListener('DOMContentLoaded', () => {
         return count + (anyInGroup ? 1 : 0);
       }, 0);
     }
-    const suburbActive = activeGroupCount > 0;
-    if (suburbActive) {
-      suburbBtn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border-red-300');
-      suburbBtn.textContent = `Suburb (${activeGroupCount})`;
-    } else {
-      suburbBtn.classList.remove('text-red-600', 'font-semibold', 'border-red-300');
-      suburbBtn.textContent = 'Suburb';
-    }
-    suburbBtn.addEventListener('click', () => {
-      renderSuburbPanel();
-      suburbBtn.setAttribute('aria-expanded', 'true');
-    });
-    group.appendChild(suburbBtn);
+    const suburbBtn = buildPill('suburbFilterBtn', 'Suburb', activeGroupCount, activeGroupCount > 0, renderSuburbPanel, 'Sub');
+    pillFilters.appendChild(suburbBtn);
 
     // Day
-    const dayBtn = document.createElement('button');
-    dayBtn.type = 'button';
-    dayBtn.id = 'dayFilterBtn';
-    dayBtn.setAttribute('aria-haspopup', 'dialog');
-    dayBtn.setAttribute('aria-expanded', 'false');
-    dayBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 focus:outline-none';
     const dayCount = filters.days && filters.days.size > 0 ? filters.days.size : 0;
-    const dayActive = dayCount > 0;
-    if (dayActive) {
-      dayBtn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border-red-300');
-      dayBtn.textContent = `Day (${dayCount})`;
-    } else {
-      dayBtn.classList.remove('text-red-600', 'font-semibold', 'border-red-300');
-      dayBtn.textContent = 'Day';
-    }
-    dayBtn.addEventListener('click', () => {
-      renderAvailableDayPanel();
-      dayBtn.setAttribute('aria-expanded', 'true');
-    });
-    group.appendChild(dayBtn);
-
-    pillFilters.appendChild(group);
+    const dayBtn = buildPill('dayFilterBtn', 'Day', dayCount, dayCount > 0, renderAvailableDayPanel);
+    pillFilters.appendChild(dayBtn);
 
     // Sort
-    const sortBtn = document.createElement('button');
-    sortBtn.type = 'button';
-    sortBtn.id = 'sortBtn';
-    sortBtn.setAttribute('aria-haspopup', 'dialog');
-    sortBtn.setAttribute('aria-expanded', 'false');
-    sortBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 ml-auto focus:outline-none';
-    const sortActive = currentSort !== 'az';
-    if (sortActive) {
-      sortBtn.classList.add('text-red-600', 'font-semibold', 'border-red-300');
-    }
-    sortBtn.textContent = getSortPillText();
-    sortBtn.addEventListener('click', () => {
-      renderSortPanel();
-      sortBtn.setAttribute('aria-expanded', 'true');
-    });
+    const sortText = getSortPillText();
+    const sortBtn = buildPill('sortBtn', sortText, 0, currentSort !== 'az', renderSortPanel, 'Sort');
+    sortBtn.style.marginLeft = 'auto';
     pillFilters.appendChild(sortBtn);
+
+    adjustPillLabels();
   }
 }
 
@@ -265,7 +225,7 @@ function getSortPillText() {
     case 'suburb':
       return 'Sort: Suburb';
     default:
-      return 'Sort';
+      return 'Sort: A–Z';
   }
 }
 
@@ -332,9 +292,9 @@ function matchesFilters(v) {
   }
   // Price filter: match if any package falls within selected price band
   let matchPrice = true;
-  if (filters.price) {
+  if (filters.price.size > 0) {
     if (v.packages && v.packages.length > 0) {
-      const filteredPkgs = v.packages.filter(pkg => getPriceBand(pkg.price) === filters.price);
+      const filteredPkgs = v.packages.filter(pkg => filters.price.has(getPriceBand(pkg.price)));
       matchPrice = filteredPkgs.length > 0;
     } else {
       matchPrice = false;
@@ -347,7 +307,7 @@ function matchesFilters(v) {
 function updateFilterVisuals() {
   document.querySelectorAll('.price-pill').forEach(btn => {
     const symbol = btn.dataset.symbol;
-    if (filters.price === symbol) {
+    if (filters.price.has(symbol)) {
       btn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border-red-300');
     } else {
       btn.classList.remove('bg-gray-100', 'text-red-600', 'font-semibold', 'border-red-300');
@@ -360,7 +320,11 @@ function bindPricePillClicks() {
   document.querySelectorAll('.price-pill').forEach(btn => {
     btn.addEventListener('click', () => {
       const selected = btn.dataset.symbol;
-      filters.price = filters.price === selected ? null : selected;
+      if (filters.price.has(selected)) {
+        filters.price.delete(selected);
+      } else {
+        filters.price.add(selected);
+      }
       updateFilterVisuals();
       filterVenues();
       maybeShowReset();
@@ -541,7 +505,7 @@ function renderSuburbPanel() {
   const panel = document.createElement('div');
   panel.id = 'suburbPanel';
   panel.className =
-    'fixed inset-x-0 bottom-0 bg-white max-h-screen flex flex-col rounded-t-2xl z-50 transition-transform duration-300 transform translate-y-full';
+    'filter-panel transition-transform duration-300 transform translate-y-full';
   panel.tabIndex = 0;
   // Panel content structure
   panel.innerHTML = `
@@ -1135,7 +1099,7 @@ function renderAvailableDayPanel() {
   const panel = document.createElement('div');
   panel.id = 'availableDayPanel';
   panel.className =
-    'fixed inset-x-0 bottom-0 bg-white max-h-screen flex flex-col rounded-t-2xl z-50 transition-transform duration-300 transform translate-y-full';
+    'filter-panel transition-transform duration-300 transform translate-y-full';
   panel.tabIndex = 0;
   // Panel content structure
   panel.innerHTML = `
@@ -1238,7 +1202,7 @@ function renderPricePanel() {
   const panel = document.createElement('div');
   panel.id = 'pricePanel';
   panel.className =
-    'fixed inset-x-0 bottom-0 bg-white max-h-screen flex flex-col rounded-t-2xl z-50 transition-transform duration-300 transform translate-y-full';
+    'filter-panel transition-transform duration-300 transform translate-y-full';
   panel.tabIndex = 0;
   // Panel content structure
   panel.innerHTML = `
@@ -1265,23 +1229,22 @@ function renderPricePanel() {
     pill.type = 'button';
     pill.textContent = priceVal;
     pill.className = 'px-5 py-2 rounded-full border text-base font-semibold focus:outline-none transition';
-    if (filters.price === priceVal) {
+    if (filters.price.has(priceVal)) {
       pill.classList.add('bg-red-500', 'text-white', 'border-red-500', 'shadow');
     } else {
       pill.classList.add('bg-gray-100', 'text-gray-700', 'border-gray-200');
     }
     pill.addEventListener('click', () => {
-      if (filters.price === priceVal) {
-        // Deselect if already selected
-        filters.price = null;
+      if (filters.price.has(priceVal)) {
+        filters.price.delete(priceVal);
       } else {
-        filters.price = priceVal;
+        filters.price.add(priceVal);
       }
       // Update pills only
       Array.from(pillsWrap.children).forEach((btn, idx) => {
         const btnVal = priceLevels[idx];
         btn.className = 'px-5 py-2 rounded-full border text-base font-semibold focus:outline-none transition';
-        if (filters.price === btnVal) {
+        if (filters.price.has(btnVal)) {
           btn.classList.add('bg-red-500', 'text-white', 'border-red-500', 'shadow');
         } else {
           btn.classList.add('bg-gray-100', 'text-gray-700', 'border-gray-200');
@@ -1294,9 +1257,8 @@ function renderPricePanel() {
   panel.querySelector('#closePricePanelBtn').addEventListener('click', closePricePanel);
   // Event: reset
   panel.querySelector('#resetPriceBtn').addEventListener('click', () => {
-    filters.price = null;
-    // Update pills only
-    Array.from(pillsWrap.children).forEach((btn, idx) => {
+    filters.price.clear();
+    Array.from(pillsWrap.children).forEach(btn => {
       btn.className = 'px-5 py-2 rounded-full border text-base font-semibold focus:outline-none transition bg-gray-100 text-gray-700 border-gray-200';
     });
     renderFilters();
@@ -1340,7 +1302,7 @@ function renderPricePanel() {
     const priceResetBtn = document.getElementById('priceResetBtn');
     if (priceResetBtn) {
       priceResetBtn.addEventListener('click', () => {
-        filters.price = null;
+        filters.price.clear();
         renderFilters();
         filterVenues();
         maybeShowReset();
@@ -1384,7 +1346,7 @@ function renderSortPanel() {
   const panel = document.createElement('div');
   panel.id = 'sortPanel';
   panel.className =
-    'fixed inset-x-0 bottom-0 bg-white max-h-screen flex flex-col rounded-t-2xl z-50 transition-transform duration-300 transform translate-y-full';
+    'filter-panel transition-transform duration-300 transform translate-y-full';
   panel.tabIndex = 0;
   panel.innerHTML = `
     <div class="flex justify-between items-center pb-2 px-4 pt-4">
@@ -1400,8 +1362,8 @@ function renderSortPanel() {
     { value: 'az', label: 'A–Z' },
     { value: 'za', label: 'Z–A' },
     { value: 'priceAsc', label: 'Price (Low → High)' },
-    { value: 'priceDesc', label: 'Price (High → Low)' },
-    { value: 'suburb', label: 'Suburb (A–Z)' }
+    { value: 'priceDesc', label: 'Price (High → Low)' }
+    // { value: 'suburb', label: 'Suburb (A–Z)' } // kept for future use
   ];
   options.forEach((opt, idx) => {
     const rowDiv = document.createElement('div');
@@ -1472,7 +1434,7 @@ function maybeShowReset() {
     filters.cuisines.size > 0 ||
     filters.suburbs.size > 0 ||
     filters.days.size > 0 ||
-    filters.price ||
+    filters.price.size > 0 ||
     (filters.search && filters.search.trim() !== '');
 
   const statusText = document.createElement('div');
@@ -1494,11 +1456,13 @@ function maybeShowReset() {
       filters.cuisines.clear();
       filters.suburbs.clear();
       filters.days.clear();
-      filters.price = null;
+      filters.price.clear();
       filters.search = '';
+      currentSort = 'az';
       const searchInput = document.getElementById('searchInput');
       if (searchInput) searchInput.value = '';
       renderFilters();
+      sortVenueCards();
       filterVenues();
       maybeShowReset();
     });
