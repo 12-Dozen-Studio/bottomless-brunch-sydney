@@ -1,12 +1,14 @@
 # Bottomless Brunch Sydney
 
-A lightweight, single-page web directory showcasing bottomless brunch venues across Sydney — with filters for cuisine, price, availability, and more.
-
-This project was built as a public-facing prototype using HTML, TailwindCSS, and vanilla JavaScript. It is designed to be mobile-first and hostable via GitHub Pages.
+Static directory of bottomless brunch venues in Sydney. Built with HTML, Tailwind CSS, and vanilla JavaScript.
 
 ## Live Site
 
 https://12-dozen-studio.github.io/bottomless-brunch-sydney/
+
+## Status
+
+Early prototype; content and structure may change.
 
 ## Features
 
@@ -27,30 +29,6 @@ https://12-dozen-studio.github.io/bottomless-brunch-sydney/
 | `brunch_venue.schema.json` | JSON schema used to validate and structure the dataset |
 | `suburb_groups.json`     | Grouping used for geographic filtering (e.g., Inner West, CBD) |
 | `README.md`              | Project documentation
-
-## Data Structure
-
-Each venue includes:
-- Name, address, suburb
-- Latitude/longitude
-- Website and optional Instagram
-- Cuisine and images
-- One or more brunch packages with:
-  - Name, price, duration
-  - Days and sessions
-  - Optional booking links and images
-
-See `brunch_venue.schema.json` for full specs.
-
-## Maps
-
-Venue maps use OpenStreetMap with Nominatim for geocoding.  
-No API key or Google Maps dependency required.
-
-## Images
-
-Images are planned to be locally hosted in `assets/images/`, downloaded from verified public sources such as official websites, Yelp, and Broadsheet.  
-An AI agent script is used to scrape and validate direct image URLs for later download and local hosting.
 
 ## Roadmap
 
