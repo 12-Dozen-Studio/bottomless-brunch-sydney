@@ -18,6 +18,7 @@ let lastFocused = null; // element to restore focus after modal close
 let trapListener = null; // focus trap handler
 let suburbGroups = null; // loaded in init()
 let suburbGroupsWithOthers = null; // suburbGroups + "Others" group
+let currentSort = 'az'; // default sort: A–Z
 
 const cuisineIconMap = {
   'Japanese': 'images/filterIcons/Japanese.png',
@@ -41,6 +42,7 @@ async function init() {
   renderFilters();
   renderBottomNav();
   renderVenues(venuesData); // pre-render all venue cards
+  sortVenueCards(); // apply default sort order
   initSearch();
   filterVenues(); // apply initial filters
   maybeShowReset();
@@ -234,10 +236,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Sort
     const sortBtn = document.createElement('button');
+    sortBtn.type = 'button';
+    sortBtn.id = 'sortBtn';
+    sortBtn.setAttribute('aria-haspopup', 'dialog');
+    sortBtn.setAttribute('aria-expanded', 'false');
     sortBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 ml-auto focus:outline-none';
-    sortBtn.textContent = 'Sort';
-    sortBtn.disabled = true;
+    const sortActive = currentSort !== 'az';
+    if (sortActive) {
+      sortBtn.classList.add('text-red-600', 'font-semibold', 'border-red-300');
+    }
+    sortBtn.textContent = getSortPillText();
+    sortBtn.addEventListener('click', () => {
+      renderSortPanel();
+      sortBtn.setAttribute('aria-expanded', 'true');
+    });
     pillFilters.appendChild(sortBtn);
+  }
+}
+
+function getSortPillText() {
+  switch (currentSort) {
+    case 'za':
+      return 'Sort: Z–A';
+    case 'priceAsc':
+      return 'Sort: Price ↑';
+    case 'priceDesc':
+      return 'Sort: Price ↓';
+    case 'suburb':
+      return 'Sort: Suburb';
+    default:
+      return 'Sort';
   }
 }
 
@@ -261,6 +289,14 @@ function getPriceBand(price) {
   if (price >= 95 && price <= 114) return '$$$';
   if (price >= 115) return '$$$$';
   return null;
+}
+
+function getLowestPackagePrice(v) {
+  if (!v.packages || v.packages.length === 0) return null;
+  const prices = v.packages
+    .map(p => typeof p.price === 'number' ? p.price : null)
+    .filter(p => p !== null);
+  return prices.length ? Math.min(...prices) : null;
 }
 
 function filterVenues() {
@@ -333,7 +369,7 @@ function bindPricePillClicks() {
 }
 
 // ---------- Reusable Checkbox/Radio Row ----------
-function renderFilterCheckboxRow(labelText, description = '', isChecked = false, isSingleChoice = false, onChange) {
+function renderFilterOptionRow(labelText, description = '', isChecked = false, isSingleChoice = false, onChange) {
   const wrapper = document.createElement('div');
   wrapper.className = 'w-full';
 
@@ -348,7 +384,9 @@ function renderFilterCheckboxRow(labelText, description = '', isChecked = false,
 
   const label = document.createElement('label');
   label.setAttribute('for', inputId);
-  label.className = 'flex w-full cursor-pointer items-start gap-3 p-3 rounded-lg transition-colors hover:bg-gray-100 active:bg-gray-100';
+  label.className =
+    'flex w-full cursor-pointer gap-3 p-3 rounded-lg transition-colors hover:bg-gray-100 active:bg-gray-100 ' +
+    (isSingleChoice ? 'items-center' : 'items-start');
 
   let descriptionHTML = '';
   if (Array.isArray(description) && description.length > 0) {
@@ -362,51 +400,80 @@ function renderFilterCheckboxRow(labelText, description = '', isChecked = false,
     `;
   }
 
-  label.innerHTML = `
-    <div class="checkbox-box flex items-center justify-center w-5 h-5 rounded border border-gray-300 bg-white">
-      <svg class="check-icon h-3.5 w-3.5 text-white hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" stroke="currentColor" stroke-width="1">
-        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-      </svg>
-      <span class="dash-icon w-2 h-0.5 bg-white hidden"></span>
-    </div>
-    <div class="flex flex-col flex-1">
-      ${descriptionHTML}
-    </div>
-  `;
+  if (isSingleChoice) {
+    label.innerHTML = `
+      <div class="radio-outer flex items-center justify-center w-5 h-5 rounded-full border border-gray-300 bg-white">
+        <div class="radio-inner w-2.5 h-2.5 rounded-full bg-gray-800 hidden"></div>
+      </div>
+      <div class="flex flex-col flex-1">
+        ${descriptionHTML}
+      </div>
+    `;
+  } else {
+    label.innerHTML = `
+      <div class="checkbox-box flex items-center justify-center w-5 h-5 rounded border border-gray-300 bg-white">
+        <svg class="check-icon h-3.5 w-3.5 text-white hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" stroke="currentColor" stroke-width="1">
+          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+        </svg>
+        <span class="dash-icon w-2 h-0.5 bg-white hidden"></span>
+      </div>
+      <div class="flex flex-col flex-1">
+        ${descriptionHTML}
+      </div>
+    `;
+  }
   wrapper.appendChild(label);
 
-  const box = label.querySelector('.checkbox-box');
-  const checkIcon = label.querySelector('.check-icon');
-  const dashIcon = label.querySelector('.dash-icon');
-
-  function updateState() {
-    if (input.checked) {
-      box.classList.add('bg-gray-800', 'border-gray-800');
-      checkIcon.classList.remove('hidden');
-      dashIcon.classList.add('hidden');
-      label.classList.add('bg-gray-100');
-    } else if (input.indeterminate) {
-      box.classList.add('bg-gray-800', 'border-gray-800');
-      checkIcon.classList.add('hidden');
-      dashIcon.classList.remove('hidden');
-      label.classList.remove('bg-gray-100');
-    } else {
-      box.classList.remove('bg-gray-800', 'border-gray-800');
-      checkIcon.classList.add('hidden');
-      dashIcon.classList.add('hidden');
-      label.classList.remove('bg-gray-100');
+  if (isSingleChoice) {
+    const outer = label.querySelector('.radio-outer');
+    const inner = label.querySelector('.radio-inner');
+    function updateState() {
+      if (input.checked) {
+        outer.classList.add('border-gray-800');
+        inner.classList.remove('hidden');
+        label.classList.add('bg-gray-100');
+      } else {
+        outer.classList.remove('border-gray-800');
+        inner.classList.add('hidden');
+        label.classList.remove('bg-gray-100');
+      }
     }
-  }
-
-  updateState();
-
-  input.addEventListener('change', e => {
-    input.indeterminate = false;
     updateState();
-    if (onChange) onChange(e.target);
-  });
-
-  input._updateState = updateState;
+    input.addEventListener('change', e => {
+      updateState();
+      if (onChange) onChange(e.target);
+    });
+    input._updateState = updateState;
+  } else {
+    const box = label.querySelector('.checkbox-box');
+    const checkIcon = label.querySelector('.check-icon');
+    const dashIcon = label.querySelector('.dash-icon');
+    function updateState() {
+      if (input.checked) {
+        box.classList.add('bg-gray-800', 'border-gray-800');
+        checkIcon.classList.remove('hidden');
+        dashIcon.classList.add('hidden');
+        label.classList.add('bg-gray-100');
+      } else if (input.indeterminate) {
+        box.classList.add('bg-gray-800', 'border-gray-800');
+        checkIcon.classList.add('hidden');
+        dashIcon.classList.remove('hidden');
+        label.classList.remove('bg-gray-100');
+      } else {
+        box.classList.remove('bg-gray-800', 'border-gray-800');
+        checkIcon.classList.add('hidden');
+        dashIcon.classList.add('hidden');
+        label.classList.remove('bg-gray-100');
+      }
+    }
+    updateState();
+    input.addEventListener('change', e => {
+      input.indeterminate = false;
+      updateState();
+      if (onChange) onChange(e.target);
+    });
+    input._updateState = updateState;
+  }
 
   return { wrapper, input };
 }
@@ -422,7 +489,7 @@ function renderSuburbPanelContent(panelContent) {
     const allChecked = suburbs.length > 0 && suburbs.every(s => filters.suburbs.has(s));
     const someChecked = suburbs.some(s => filters.suburbs.has(s));
 
-    const { wrapper, input } = renderFilterCheckboxRow(group, suburbs, allChecked, false, el => {
+    const { wrapper, input } = renderFilterOptionRow(group, suburbs, allChecked, false, el => {
       if (el.checked) {
         suburbs.forEach(s => filters.suburbs.add(s));
       } else {
@@ -601,6 +668,40 @@ function renderVenues(venues) {
     list.appendChild(card);
     return { el: card, index };
   });
+}
+
+function sortVenueCards() {
+  const list = document.getElementById('venueList');
+  if (!list) return;
+  venueCards.sort((a, b) => {
+    const va = venuesData[a.index];
+    const vb = venuesData[b.index];
+    switch (currentSort) {
+      case 'za':
+        return vb.name.localeCompare(va.name);
+      case 'priceAsc': {
+        const pa = getLowestPackagePrice(va);
+        const pb = getLowestPackagePrice(vb);
+        if (pa === null && pb === null) return 0;
+        if (pa === null) return 1;
+        if (pb === null) return -1;
+        return pa - pb;
+      }
+      case 'priceDesc': {
+        const pa = getLowestPackagePrice(va);
+        const pb = getLowestPackagePrice(vb);
+        if (pa === null && pb === null) return 0;
+        if (pa === null) return 1;
+        if (pb === null) return -1;
+        return pb - pa;
+      }
+      case 'suburb':
+        return va.suburb.localeCompare(vb.suburb);
+      default:
+        return va.name.localeCompare(vb.name);
+    }
+  });
+  venueCards.forEach(({ el }) => list.appendChild(el));
 }
 
 // Helper function to generate venueKey from venue name (matches Python script logic)
@@ -999,7 +1100,7 @@ function renderAvailableDayPanelContent(panelContent) {
   daysOfWeek.forEach((day, idx) => {
     const rowDiv = document.createElement('div');
     rowDiv.className = 'py-3' + (idx < daysOfWeek.length - 1 ? ' border-b border-gray-200' : '');
-    const { wrapper, input } = renderFilterCheckboxRow(day, '', filters.days.has(day), false, el => {
+    const { wrapper, input } = renderFilterOptionRow(day, '', filters.days.has(day), false, el => {
       if (el.checked) {
         filters.days.add(day);
       } else {
@@ -1259,6 +1360,91 @@ function closePricePanel() {
     document.body.classList.remove('overflow-hidden');
     // Restore focus to Price filter button
     const btn = document.getElementById('priceFilterBtn');
+    if (btn) {
+      btn.setAttribute('aria-expanded', 'false');
+      btn.focus();
+    }
+  }, 300);
+}
+
+function renderSortPanel() {
+  const existing = document.getElementById('sortPanelBackdrop');
+  if (existing) existing.remove();
+  const backdrop = document.createElement('div');
+  backdrop.id = 'sortPanelBackdrop';
+  backdrop.className = 'fixed inset-0 z-50 flex items-end justify-center';
+  backdrop.setAttribute('role', 'dialog');
+  backdrop.setAttribute('aria-modal', 'true');
+  backdrop.setAttribute('aria-labelledby', 'sortPanelTitle');
+  const scrim = document.createElement('div');
+  scrim.className = 'absolute inset-0 bg-black bg-opacity-30';
+  scrim.tabIndex = -1;
+  scrim.addEventListener('click', closeSortPanel);
+  backdrop.appendChild(scrim);
+  const panel = document.createElement('div');
+  panel.id = 'sortPanel';
+  panel.className =
+    'fixed inset-x-0 bottom-0 bg-white max-h-screen flex flex-col rounded-t-2xl z-50 transition-transform duration-300 transform translate-y-full';
+  panel.tabIndex = 0;
+  panel.innerHTML = `
+    <div class="flex justify-between items-center pb-2 px-4 pt-4">
+      <h2 id="sortPanelTitle" class="text-lg font-semibold text-center w-full">Sort</h2>
+      <button type="button" class="text-gray-400 absolute right-6" aria-label="Close sort panel" id="closeSortPanelBtn">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+    <div class="flex-1 overflow-y-auto px-6" id="sortOptionsWrap"></div>
+  `;
+  const wrap = panel.querySelector('#sortOptionsWrap');
+  const options = [
+    { value: 'az', label: 'A–Z' },
+    { value: 'za', label: 'Z–A' },
+    { value: 'priceAsc', label: 'Price (Low → High)' },
+    { value: 'priceDesc', label: 'Price (High → Low)' },
+    { value: 'suburb', label: 'Suburb (A–Z)' }
+  ];
+  options.forEach((opt, idx) => {
+    const rowDiv = document.createElement('div');
+    rowDiv.className = 'py-3' + (idx < options.length - 1 ? ' border-b border-gray-200' : '');
+    const { wrapper, input } = renderFilterOptionRow(opt.label, '', currentSort === opt.value, true, () => {
+      currentSort = opt.value;
+      renderFilters();
+      sortVenueCards();
+      filterVenues();
+      closeSortPanel();
+    });
+    input.name = 'sortOption';
+    rowDiv.appendChild(wrapper);
+    wrap.appendChild(rowDiv);
+  });
+  panel.querySelector('#closeSortPanelBtn').addEventListener('click', closeSortPanel);
+  panel.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeSortPanel();
+    }
+  });
+  setTimeout(() => {
+    const checked = panel.querySelector('input[type="radio"]:checked');
+    if (checked) checked.focus();
+    else panel.focus();
+  }, 0);
+  requestAnimationFrame(() => {
+    panel.classList.remove('translate-y-full');
+  });
+  backdrop.appendChild(panel);
+  document.body.appendChild(backdrop);
+  document.body.classList.add('overflow-hidden');
+}
+
+function closeSortPanel() {
+  const backdrop = document.getElementById('sortPanelBackdrop');
+  if (!backdrop) return;
+  const panel = document.getElementById('sortPanel');
+  if (panel) panel.classList.add('translate-y-full');
+  setTimeout(() => {
+    if (backdrop) backdrop.remove();
+    document.body.classList.remove('overflow-hidden');
+    const btn = document.getElementById('sortBtn');
     if (btn) {
       btn.setAttribute('aria-expanded', 'false');
       btn.focus();
