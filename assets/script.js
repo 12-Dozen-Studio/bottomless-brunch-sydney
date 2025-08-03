@@ -1181,6 +1181,7 @@ function renderSortPanel() {
     radio.addEventListener('change', () => {
       filters.sort = opt.key;
       sortVenues();
+      filterVenues();
       renderFilters();
       maybeShowReset();
       closeSortPanel();
