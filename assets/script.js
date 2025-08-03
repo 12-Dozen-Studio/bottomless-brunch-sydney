@@ -150,15 +150,13 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
   // Second row: pill-style filters
-  // Clear the pillFilters container before rendering filter pills
   const pillFilters = document.getElementById('pillFilters');
   if (pillFilters) {
     pillFilters.innerHTML = '';
-    pillFilters.classList.add('flex-nowrap');
 
     // Group first three pills so Sort can stay right-aligned
     const group = document.createElement('div');
-    group.className = 'flex gap-1 flex-nowrap';
+    group.className = 'flex gap-1';
 
     // Price
     const priceBtn = document.createElement('button');
@@ -166,16 +164,12 @@ document.addEventListener('DOMContentLoaded', () => {
     priceBtn.id = 'priceFilterBtn';
     priceBtn.setAttribute('aria-haspopup', 'dialog');
     priceBtn.setAttribute('aria-expanded', 'false');
-    priceBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 focus:outline-none';
-    let priceActive = !!filters.price;
-    if (priceActive) {
-      priceBtn.classList.remove('bg-[#363636]', 'text-white', 'border-gray-200', 'text-gray-700');
-      priceBtn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border', 'border-red-300');
-      priceBtn.textContent = filters.price;
-    } else {
-      priceBtn.classList.remove('text-red-600', 'font-semibold', 'border-red-300');
-      priceBtn.textContent = 'Price';
-    }
+    priceBtn.className = 'filter-pill';
+    const priceActive = !!filters.price;
+    priceBtn.dataset.full = priceActive ? `Price (${filters.price})` : 'Price';
+    priceBtn.dataset.short = priceBtn.dataset.full;
+    priceBtn.textContent = priceBtn.dataset.full;
+    if (priceActive) priceBtn.classList.add('active');
     priceBtn.addEventListener('click', () => {
       renderPricePanel();
       priceBtn.setAttribute('aria-expanded', 'true');
@@ -188,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
     suburbBtn.id = 'suburbFilterBtn';
     suburbBtn.setAttribute('aria-haspopup', 'dialog');
     suburbBtn.setAttribute('aria-expanded', 'false');
-    suburbBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 focus:outline-none';
+    suburbBtn.className = 'filter-pill';
     let activeGroupCount = 0;
     if (filters.suburbs && filters.suburbs.size > 0 && suburbGroupsWithOthers) {
       activeGroupCount = Object.entries(suburbGroupsWithOthers).reduce((count, [group, suburbs]) => {
@@ -197,13 +191,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 0);
     }
     const suburbActive = activeGroupCount > 0;
-    if (suburbActive) {
-      suburbBtn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border-red-300');
-      suburbBtn.textContent = `Suburb (${activeGroupCount})`;
-    } else {
-      suburbBtn.classList.remove('text-red-600', 'font-semibold', 'border-red-300');
-      suburbBtn.textContent = 'Suburb';
-    }
+    suburbBtn.dataset.full = suburbActive ? `Suburb (${activeGroupCount})` : 'Suburb';
+    suburbBtn.dataset.short = suburbActive ? `Sub (${activeGroupCount})` : 'Sub';
+    suburbBtn.textContent = suburbBtn.dataset.full;
+    if (suburbActive) suburbBtn.classList.add('active');
     suburbBtn.addEventListener('click', () => {
       renderSuburbPanel();
       suburbBtn.setAttribute('aria-expanded', 'true');
@@ -216,16 +207,13 @@ document.addEventListener('DOMContentLoaded', () => {
     dayBtn.id = 'dayFilterBtn';
     dayBtn.setAttribute('aria-haspopup', 'dialog');
     dayBtn.setAttribute('aria-expanded', 'false');
-    dayBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 focus:outline-none';
+    dayBtn.className = 'filter-pill';
     const dayCount = filters.days && filters.days.size > 0 ? filters.days.size : 0;
     const dayActive = dayCount > 0;
-    if (dayActive) {
-      dayBtn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border-red-300');
-      dayBtn.textContent = `Day (${dayCount})`;
-    } else {
-      dayBtn.classList.remove('text-red-600', 'font-semibold', 'border-red-300');
-      dayBtn.textContent = 'Day';
-    }
+    dayBtn.dataset.full = dayActive ? `Day (${dayCount})` : 'Day';
+    dayBtn.dataset.short = dayBtn.dataset.full;
+    dayBtn.textContent = dayBtn.dataset.full;
+    if (dayActive) dayBtn.classList.add('active');
     dayBtn.addEventListener('click', () => {
       renderAvailableDayPanel();
       dayBtn.setAttribute('aria-expanded', 'true');
@@ -240,19 +228,42 @@ document.addEventListener('DOMContentLoaded', () => {
     sortBtn.id = 'sortBtn';
     sortBtn.setAttribute('aria-haspopup', 'dialog');
     sortBtn.setAttribute('aria-expanded', 'false');
-    sortBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 ml-auto focus:outline-none';
+    sortBtn.className = 'filter-pill';
+    sortBtn.style.marginLeft = 'auto';
     const sortActive = currentSort !== 'az';
-    if (sortActive) {
-      sortBtn.classList.add('text-red-600', 'font-semibold', 'border-red-300');
-    }
-    sortBtn.textContent = getSortPillText();
+    sortBtn.dataset.full = getSortPillText();
+    sortBtn.dataset.short = sortBtn.dataset.full.replace(/^Sort: /, '');
+    sortBtn.textContent = sortBtn.dataset.full;
+    if (sortActive) sortBtn.classList.add('active');
     sortBtn.addEventListener('click', () => {
       renderSortPanel();
       sortBtn.setAttribute('aria-expanded', 'true');
     });
     pillFilters.appendChild(sortBtn);
+
+    adjustPillText();
   }
 }
+
+function adjustPillText() {
+  const container = document.getElementById('pillFilters');
+  if (!container) return;
+  const buttons = Array.from(container.querySelectorAll('.filter-pill'));
+  buttons.forEach(btn => {
+    if (btn.dataset.full) btn.textContent = btn.dataset.full;
+  });
+  const totalWidth = buttons.reduce((sum, btn) => {
+    const style = getComputedStyle(btn);
+    return sum + btn.offsetWidth + parseFloat(style.marginLeft) + parseFloat(style.marginRight);
+  }, 0);
+  if (totalWidth > container.clientWidth) {
+    buttons.forEach(btn => {
+      if (btn.dataset.short) btn.textContent = btn.dataset.short;
+    });
+  }
+}
+
+window.addEventListener('resize', adjustPillText);
 
 function getSortPillText() {
   switch (currentSort) {
@@ -265,7 +276,7 @@ function getSortPillText() {
     case 'suburb':
       return 'Sort: Suburb';
     default:
-      return 'Sort';
+      return 'Sort: A–Z';
   }
 }
 
@@ -540,8 +551,7 @@ function renderSuburbPanel() {
   // Panel
   const panel = document.createElement('div');
   panel.id = 'suburbPanel';
-  panel.className =
-    'fixed inset-x-0 bottom-0 bg-white max-h-screen flex flex-col rounded-t-2xl z-50 transition-transform duration-300 transform translate-y-full';
+  panel.className = 'filter-panel';
   panel.tabIndex = 0;
   // Panel content structure
   panel.innerHTML = `
@@ -600,7 +610,7 @@ function renderSuburbPanel() {
   }, 0);
   // Slide up animation
   requestAnimationFrame(() => {
-    panel.classList.remove('translate-y-full');
+    panel.classList.add('show');
   });
   // Remove panel on backdrop click
   backdrop.appendChild(panel);
@@ -612,7 +622,7 @@ function closeSuburbPanel() {
   const backdrop = document.getElementById('suburbPanelBackdrop');
   if (!backdrop) return;
   const panel = document.getElementById('suburbPanel');
-  if (panel) panel.classList.add('translate-y-full');
+  if (panel) panel.classList.remove('show');
   setTimeout(() => {
     if (backdrop) backdrop.remove();
     document.body.classList.remove('overflow-hidden');
@@ -1134,8 +1144,7 @@ function renderAvailableDayPanel() {
   // Panel
   const panel = document.createElement('div');
   panel.id = 'availableDayPanel';
-  panel.className =
-    'fixed inset-x-0 bottom-0 bg-white max-h-screen flex flex-col rounded-t-2xl z-50 transition-transform duration-300 transform translate-y-full';
+  panel.className = 'filter-panel';
   panel.tabIndex = 0;
   // Panel content structure
   panel.innerHTML = `
@@ -1192,7 +1201,7 @@ function renderAvailableDayPanel() {
   }, 0);
   // Slide up animation
   requestAnimationFrame(() => {
-    panel.classList.remove('translate-y-full');
+    panel.classList.add('show');
   });
   // Remove panel on backdrop click
   backdrop.appendChild(panel);
@@ -1204,7 +1213,7 @@ function closeAvailableDayPanel() {
   const backdrop = document.getElementById('availableDayPanelBackdrop');
   if (!backdrop) return;
   const panel = document.getElementById('availableDayPanel');
-  if (panel) panel.classList.add('translate-y-full');
+  if (panel) panel.classList.remove('show');
   setTimeout(() => {
     if (backdrop) backdrop.remove();
     document.body.classList.remove('overflow-hidden');
@@ -1237,8 +1246,7 @@ function renderPricePanel() {
   // Panel
   const panel = document.createElement('div');
   panel.id = 'pricePanel';
-  panel.className =
-    'fixed inset-x-0 bottom-0 bg-white max-h-screen flex flex-col rounded-t-2xl z-50 transition-transform duration-300 transform translate-y-full';
+  panel.className = 'filter-panel';
   panel.tabIndex = 0;
   // Panel content structure
   panel.innerHTML = `
@@ -1327,7 +1335,7 @@ function renderPricePanel() {
   }, 0);
   // Slide up animation
   requestAnimationFrame(() => {
-    panel.classList.remove('translate-y-full');
+    panel.classList.add('show');
   });
   // Remove panel on backdrop click
   backdrop.appendChild(panel);
@@ -1354,7 +1362,7 @@ function closePricePanel() {
   const backdrop = document.getElementById('pricePanelBackdrop');
   if (!backdrop) return;
   const panel = document.getElementById('pricePanel');
-  if (panel) panel.classList.add('translate-y-full');
+  if (panel) panel.classList.remove('show');
   setTimeout(() => {
     if (backdrop) backdrop.remove();
     document.body.classList.remove('overflow-hidden');
@@ -1383,8 +1391,7 @@ function renderSortPanel() {
   backdrop.appendChild(scrim);
   const panel = document.createElement('div');
   panel.id = 'sortPanel';
-  panel.className =
-    'fixed inset-x-0 bottom-0 bg-white max-h-screen flex flex-col rounded-t-2xl z-50 transition-transform duration-300 transform translate-y-full';
+  panel.className = 'filter-panel';
   panel.tabIndex = 0;
   panel.innerHTML = `
     <div class="flex justify-between items-center pb-2 px-4 pt-4">
@@ -1400,8 +1407,8 @@ function renderSortPanel() {
     { value: 'az', label: 'A–Z' },
     { value: 'za', label: 'Z–A' },
     { value: 'priceAsc', label: 'Price (Low → High)' },
-    { value: 'priceDesc', label: 'Price (High → Low)' },
-    { value: 'suburb', label: 'Suburb (A–Z)' }
+    { value: 'priceDesc', label: 'Price (High → Low)' }
+    // { value: 'suburb', label: 'Suburb (A–Z)' } // Reserved for future use
   ];
   options.forEach((opt, idx) => {
     const rowDiv = document.createElement('div');
@@ -1429,7 +1436,7 @@ function renderSortPanel() {
     else panel.focus();
   }, 0);
   requestAnimationFrame(() => {
-    panel.classList.remove('translate-y-full');
+    panel.classList.add('show');
   });
   backdrop.appendChild(panel);
   document.body.appendChild(backdrop);
@@ -1440,7 +1447,7 @@ function closeSortPanel() {
   const backdrop = document.getElementById('sortPanelBackdrop');
   if (!backdrop) return;
   const panel = document.getElementById('sortPanel');
-  if (panel) panel.classList.add('translate-y-full');
+  if (panel) panel.classList.remove('show');
   setTimeout(() => {
     if (backdrop) backdrop.remove();
     document.body.classList.remove('overflow-hidden');
@@ -1496,9 +1503,11 @@ function maybeShowReset() {
       filters.days.clear();
       filters.price = null;
       filters.search = '';
+      currentSort = 'az';
       const searchInput = document.getElementById('searchInput');
       if (searchInput) searchInput.value = '';
       renderFilters();
+      sortVenueCards();
       filterVenues();
       maybeShowReset();
     });
