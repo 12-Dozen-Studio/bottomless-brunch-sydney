@@ -74,6 +74,36 @@ function getUniqueCuisines(venues) {
   return Array.from(set).sort();
 }
 
+function createFilterPill(id, label, isActive, onClick) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.id = id;
+  btn.className = 'filter-pill' + (isActive ? ' active' : '');
+  btn.setAttribute('aria-haspopup', 'dialog');
+  btn.setAttribute('aria-expanded', 'false');
+  btn.addEventListener('click', onClick);
+  const labelSpan = document.createElement('span');
+  labelSpan.className = 'pill-label';
+  labelSpan.textContent = label;
+  labelSpan.dataset.full = label;
+  const arrowSpan = document.createElement('span');
+  arrowSpan.className = 'pill-arrow';
+  arrowSpan.textContent = '▼';
+  btn.append(labelSpan, arrowSpan);
+  return btn;
+}
+
+function adjustPillText() {
+  const maxChars = window.innerWidth < 360 ? 10 : 20;
+  document.querySelectorAll('.filter-pill .pill-label').forEach(span => {
+    const full = span.dataset.full || span.textContent;
+    span.dataset.full = full;
+    span.textContent =
+      full.length > maxChars ? full.slice(0, maxChars - 1) + '…' : full;
+  });
+}
+window.addEventListener('resize', adjustPillText);
+
 // ---------- Filter Rendering ----------
 function renderFilters() {
   const cuisines = [
@@ -150,107 +180,63 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
   // Second row: pill-style filters
-  // Clear the pillFilters container before rendering filter pills
   const pillFilters = document.getElementById('pillFilters');
   if (pillFilters) {
     pillFilters.innerHTML = '';
-    pillFilters.classList.add('flex-nowrap');
 
-    // Group first three pills so Sort can stay right-aligned
-    const group = document.createElement('div');
-    group.className = 'flex gap-1 flex-nowrap';
+    const priceCount = filters.price ? 1 : 0;
+    const priceBtn = createFilterPill(
+      'priceFilterBtn',
+      priceCount ? `Price (${priceCount})` : 'Price',
+      priceCount > 0,
+      () => {
+        renderPricePanel();
+        priceBtn.setAttribute('aria-expanded', 'true');
+      }
+    );
 
-    // Price
-    const priceBtn = document.createElement('button');
-    priceBtn.type = 'button';
-    priceBtn.id = 'priceFilterBtn';
-    priceBtn.setAttribute('aria-haspopup', 'dialog');
-    priceBtn.setAttribute('aria-expanded', 'false');
-    priceBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 focus:outline-none';
-    let priceActive = !!filters.price;
-    if (priceActive) {
-      priceBtn.classList.remove('bg-[#363636]', 'text-white', 'border-gray-200', 'text-gray-700');
-      priceBtn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border', 'border-red-300');
-      priceBtn.textContent = filters.price;
-    } else {
-      priceBtn.classList.remove('text-red-600', 'font-semibold', 'border-red-300');
-      priceBtn.textContent = 'Price';
-    }
-    priceBtn.addEventListener('click', () => {
-      renderPricePanel();
-      priceBtn.setAttribute('aria-expanded', 'true');
-    });
-    group.appendChild(priceBtn);
-
-    // Suburb
-    const suburbBtn = document.createElement('button');
-    suburbBtn.type = 'button';
-    suburbBtn.id = 'suburbFilterBtn';
-    suburbBtn.setAttribute('aria-haspopup', 'dialog');
-    suburbBtn.setAttribute('aria-expanded', 'false');
-    suburbBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 focus:outline-none';
     let activeGroupCount = 0;
     if (filters.suburbs && filters.suburbs.size > 0 && suburbGroupsWithOthers) {
-      activeGroupCount = Object.entries(suburbGroupsWithOthers).reduce((count, [group, suburbs]) => {
-        const anyInGroup = suburbs.some(sub => filters.suburbs.has(sub));
-        return count + (anyInGroup ? 1 : 0);
-      }, 0);
+      activeGroupCount = Object.entries(suburbGroupsWithOthers).reduce(
+        (count, [, suburbs]) =>
+          count + (suburbs.some(sub => filters.suburbs.has(sub)) ? 1 : 0),
+        0
+      );
     }
-    const suburbActive = activeGroupCount > 0;
-    if (suburbActive) {
-      suburbBtn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border-red-300');
-      suburbBtn.textContent = `Suburb (${activeGroupCount})`;
-    } else {
-      suburbBtn.classList.remove('text-red-600', 'font-semibold', 'border-red-300');
-      suburbBtn.textContent = 'Suburb';
-    }
-    suburbBtn.addEventListener('click', () => {
-      renderSuburbPanel();
-      suburbBtn.setAttribute('aria-expanded', 'true');
-    });
-    group.appendChild(suburbBtn);
+    const suburbBtn = createFilterPill(
+      'suburbFilterBtn',
+      activeGroupCount ? `Suburb (${activeGroupCount})` : 'Suburb',
+      activeGroupCount > 0,
+      () => {
+        renderSuburbPanel();
+        suburbBtn.setAttribute('aria-expanded', 'true');
+      }
+    );
 
-    // Day
-    const dayBtn = document.createElement('button');
-    dayBtn.type = 'button';
-    dayBtn.id = 'dayFilterBtn';
-    dayBtn.setAttribute('aria-haspopup', 'dialog');
-    dayBtn.setAttribute('aria-expanded', 'false');
-    dayBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 focus:outline-none';
     const dayCount = filters.days && filters.days.size > 0 ? filters.days.size : 0;
-    const dayActive = dayCount > 0;
-    if (dayActive) {
-      dayBtn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border-red-300');
-      dayBtn.textContent = `Day (${dayCount})`;
-    } else {
-      dayBtn.classList.remove('text-red-600', 'font-semibold', 'border-red-300');
-      dayBtn.textContent = 'Day';
-    }
-    dayBtn.addEventListener('click', () => {
-      renderAvailableDayPanel();
-      dayBtn.setAttribute('aria-expanded', 'true');
-    });
-    group.appendChild(dayBtn);
+    const dayBtn = createFilterPill(
+      'dayFilterBtn',
+      dayCount ? `Day (${dayCount})` : 'Day',
+      dayCount > 0,
+      () => {
+        renderAvailableDayPanel();
+        dayBtn.setAttribute('aria-expanded', 'true');
+      }
+    );
 
-    pillFilters.appendChild(group);
+    const sortBtn = createFilterPill(
+      'sortBtn',
+      getSortPillText(),
+      currentSort !== 'az',
+      () => {
+        renderSortPanel();
+        sortBtn.setAttribute('aria-expanded', 'true');
+      }
+    );
+    sortBtn.style.marginLeft = 'auto';
 
-    // Sort
-    const sortBtn = document.createElement('button');
-    sortBtn.type = 'button';
-    sortBtn.id = 'sortBtn';
-    sortBtn.setAttribute('aria-haspopup', 'dialog');
-    sortBtn.setAttribute('aria-expanded', 'false');
-    sortBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 ml-auto focus:outline-none';
-    const sortActive = currentSort !== 'az';
-    if (sortActive) {
-      sortBtn.classList.add('text-red-600', 'font-semibold', 'border-red-300');
-    }
-    sortBtn.textContent = getSortPillText();
-    sortBtn.addEventListener('click', () => {
-      renderSortPanel();
-      sortBtn.setAttribute('aria-expanded', 'true');
-    });
-    pillFilters.appendChild(sortBtn);
+    pillFilters.append(priceBtn, suburbBtn, dayBtn, sortBtn);
+    adjustPillText();
   }
 }
 
@@ -265,7 +251,7 @@ function getSortPillText() {
     case 'suburb':
       return 'Sort: Suburb';
     default:
-      return 'Sort';
+      return 'Sort: A–Z';
   }
 }
 
@@ -1400,8 +1386,8 @@ function renderSortPanel() {
     { value: 'az', label: 'A–Z' },
     { value: 'za', label: 'Z–A' },
     { value: 'priceAsc', label: 'Price (Low → High)' },
-    { value: 'priceDesc', label: 'Price (High → Low)' },
-    { value: 'suburb', label: 'Suburb (A–Z)' }
+    { value: 'priceDesc', label: 'Price (High → Low)' }
+    // { value: 'suburb', label: 'Suburb (A–Z)' } // reserved for future use
   ];
   options.forEach((opt, idx) => {
     const rowDiv = document.createElement('div');
@@ -1498,6 +1484,8 @@ function maybeShowReset() {
       filters.search = '';
       const searchInput = document.getElementById('searchInput');
       if (searchInput) searchInput.value = '';
+      currentSort = 'az';
+      sortVenueCards();
       renderFilters();
       filterVenues();
       maybeShowReset();

@@ -1,0 +1,40 @@
+.pill-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 14px;
+  border-radius: 9999px;
+  border: 1px solid #d1d5db;
+  background-color: #f3f4f6;
+  color: #374151;
+  cursor: pointer;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.filter-pill .pill-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.filter-pill .pill-arrow {
+  font-size: 0.7em;
+}
+.filter-pill.active {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+  font-weight: 600;
+}
+@media (max-width: 360px) {
+  .filter-pill .pill-label {
+    max-width: 60px;
+  }
+}
