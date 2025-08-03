@@ -555,7 +555,7 @@ function renderVenueCard(venue, index) {
   const card = document.createElement('div');
   // Set consistent card height and flex layout
   card.className =
-    'relative bg-white rounded-lg overflow-hidden border border-gray-200 flex cursor-pointer focus:outline-none h-[160px]';
+    'relative mb-4 bg-white rounded-lg overflow-hidden border border-gray-200 flex cursor-pointer focus:outline-none h-[160px]';
   card.tabIndex = 0;
   card.setAttribute('role', 'button');
   card.setAttribute('aria-label', `${venue.name} details`);
