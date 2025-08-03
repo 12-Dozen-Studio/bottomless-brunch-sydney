@@ -286,7 +286,7 @@ function getSortPillText() {
     default:
       label = '';
   }
-  return `${sortIconSvg}Sort: ${label}`;
+  return `${sortIconSvg} ${label}`;
 }
 
 
