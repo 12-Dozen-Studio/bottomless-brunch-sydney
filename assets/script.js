@@ -12,7 +12,7 @@
 let venuesData = [];
 const favorites = new Set(JSON.parse(localStorage.getItem('favorites') || '[]'));
 // Add suburbs filter as a Set for multi-select
-const filters = { search: '', cuisines: new Set(), suburbs: new Set(), days: new Set(), price: null };
+const filters = { search: '', cuisines: new Set(), suburbs: new Set(), days: new Set(), price: null, sort: null };
 let venueCards = []; // { el, index }
 let lastFocused = null; // element to restore focus after modal close
 let trapListener = null; // focus trap handler
@@ -28,6 +28,14 @@ const cuisineIconMap = {
   'Asian': 'images/filterIcons/Asian.png',
   'Australian': 'images/filterIcons/Austrlian.png'
 };
+
+const SORT_OPTIONS = [
+  { key: 'az', label: 'A–Z', pill: 'Sort: A–Z' },
+  { key: 'za', label: 'Z–A', pill: 'Sort: Z–A' },
+  { key: 'priceAsc', label: 'Price (Low → High)', pill: 'Sort: Price ↑' },
+  { key: 'priceDesc', label: 'Price (High → Low)', pill: 'Sort: Price ↓' },
+  { key: 'suburb', label: 'Suburb (A–Z)', pill: 'Sort: Suburb' }
+];
 
 // Wait for DOM content to boot
 document.addEventListener('DOMContentLoaded', init);
@@ -234,9 +242,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Sort
     const sortBtn = document.createElement('button');
+    sortBtn.type = 'button';
+    sortBtn.id = 'sortBtn';
+    sortBtn.setAttribute('aria-haspopup', 'dialog');
+    sortBtn.setAttribute('aria-expanded', 'false');
     sortBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 ml-auto focus:outline-none';
-    sortBtn.textContent = 'Sort';
-    sortBtn.disabled = true;
+    if (filters.sort) {
+      sortBtn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border-red-300');
+      const opt = SORT_OPTIONS.find(o => o.key === filters.sort);
+      sortBtn.textContent = opt ? opt.pill : 'Sort';
+    } else {
+      sortBtn.textContent = 'Sort';
+    }
+    sortBtn.addEventListener('click', () => {
+      renderSortPanel();
+      sortBtn.setAttribute('aria-expanded', 'true');
+    });
     pillFilters.appendChild(sortBtn);
   }
 }
@@ -305,6 +326,55 @@ function matchesFilters(v) {
     }
   }
   return matchQuery && matchCuisine && matchSuburb && matchDays && matchPrice;
+}
+
+function getLowestPrice(v) {
+  if (!v.packages || v.packages.length === 0) return null;
+  const prices = v.packages.map(p => p.price).filter(p => typeof p === 'number');
+  return prices.length ? Math.min(...prices) : null;
+}
+
+function getSortComparator(key) {
+  switch (key) {
+    case 'az':
+      return (a, b) => a.name.localeCompare(b.name);
+    case 'za':
+      return (a, b) => b.name.localeCompare(a.name);
+    case 'priceAsc':
+      return (a, b) => {
+        const pa = getLowestPrice(a);
+        const pb = getLowestPrice(b);
+        if (pa === null && pb === null) return 0;
+        if (pa === null) return 1;
+        if (pb === null) return -1;
+        return pa - pb || a.name.localeCompare(b.name);
+      };
+    case 'priceDesc':
+      return (a, b) => {
+        const pa = getLowestPrice(a);
+        const pb = getLowestPrice(b);
+        if (pa === null && pb === null) return 0;
+        if (pa === null) return 1;
+        if (pb === null) return -1;
+        return pb - pa || a.name.localeCompare(b.name);
+      };
+    case 'suburb':
+      return (a, b) => a.suburb.localeCompare(b.suburb) || a.name.localeCompare(b.name);
+    default:
+      return null;
+  }
+}
+
+function sortVenues() {
+  const list = document.getElementById('venueList');
+  if (!list) return;
+  const cmp = getSortComparator(filters.sort);
+  if (cmp) {
+    venueCards.sort((a, b) => cmp(venuesData[a.index], venuesData[b.index]));
+  } else {
+    venueCards.sort((a, b) => a.index - b.index);
+  }
+  venueCards.forEach(vc => list.appendChild(vc.el));
 }
 // ---------- Price Pill Filter (new for banded price filtering) ----------
 // This should be called after DOM is loaded and filters have been rendered
@@ -1063,6 +1133,92 @@ function closeAvailableDayPanel() {
     }
   }, 300);
 }
+
+// ---------- Sort Panel ----------
+function renderSortPanel() {
+  const existing = document.getElementById('sortPanelBackdrop');
+  if (existing) existing.remove();
+  const backdrop = document.createElement('div');
+  backdrop.id = 'sortPanelBackdrop';
+  backdrop.className = 'fixed inset-0 z-50 flex items-end justify-center';
+  backdrop.setAttribute('role', 'dialog');
+  backdrop.setAttribute('aria-modal', 'true');
+  backdrop.setAttribute('aria-labelledby', 'sortPanelTitle');
+  const scrim = document.createElement('div');
+  scrim.className = 'absolute inset-0 bg-black bg-opacity-30';
+  scrim.tabIndex = -1;
+  scrim.addEventListener('click', closeSortPanel);
+  backdrop.appendChild(scrim);
+  const panel = document.createElement('div');
+  panel.id = 'sortPanel';
+  panel.className = 'fixed inset-x-0 bottom-0 bg-white max-h-screen flex flex-col rounded-t-2xl z-50 transition-transform duration-300 transform translate-y-full';
+  panel.tabIndex = 0;
+  panel.innerHTML = `
+    <div class="flex justify-between items-center pb-2 px-4 pt-4">
+      <h2 id="sortPanelTitle" class="text-lg font-semibold text-center w-full">Sort</h2>
+      <button type="button" class="text-gray-400 absolute right-6" aria-label="Close sort panel" id="closeSortPanelBtn">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+    <div class="flex-1 overflow-y-auto px-6" id="sortOptionsWrap"></div>
+  `;
+  const wrap = panel.querySelector('#sortOptionsWrap');
+  SORT_OPTIONS.forEach((opt, idx) => {
+    const label = document.createElement('label');
+    label.className = 'flex items-center py-3 rounded cursor-pointer hover:bg-gray-100' + (idx < SORT_OPTIONS.length - 1 ? ' border-b border-gray-200' : '');
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = 'sortOptions';
+    radio.value = opt.key;
+    radio.className = 'accent-red-500 mr-2';
+    radio.checked = filters.sort === opt.key;
+    const textSpan = document.createElement('span');
+    textSpan.className = 'font-semibold text-sm text-gray-800';
+    textSpan.textContent = opt.label;
+    label.appendChild(radio);
+    label.appendChild(textSpan);
+    if (radio.checked) label.classList.add('bg-gray-100');
+    radio.addEventListener('change', () => {
+      filters.sort = opt.key;
+      sortVenues();
+      renderFilters();
+      maybeShowReset();
+      closeSortPanel();
+    });
+    wrap.appendChild(label);
+  });
+  panel.querySelector('#closeSortPanelBtn').addEventListener('click', closeSortPanel);
+  panel.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeSortPanel();
+  });
+  setTimeout(() => {
+    const firstRadio = panel.querySelector('input[type="radio"]');
+    if (firstRadio) firstRadio.focus();
+    else panel.focus();
+  }, 0);
+  requestAnimationFrame(() => {
+    panel.classList.remove('translate-y-full');
+  });
+  backdrop.appendChild(panel);
+  document.body.appendChild(backdrop);
+  document.body.classList.add('overflow-hidden');
+}
+
+function closeSortPanel() {
+  const backdrop = document.getElementById('sortPanelBackdrop');
+  if (!backdrop) return;
+  const panel = document.getElementById('sortPanel');
+  if (panel) panel.classList.add('translate-y-full');
+  setTimeout(() => {
+    if (backdrop) backdrop.remove();
+    document.body.classList.remove('overflow-hidden');
+    const btn = document.getElementById('sortBtn');
+    if (btn) {
+      btn.setAttribute('aria-expanded', 'false');
+      btn.focus();
+    }
+  }, 300);
+}
 // ---------- Price Panel ----------
 function renderPricePanel() {
   // Remove any existing panel
@@ -1235,6 +1391,7 @@ function maybeShowReset() {
     filters.suburbs.size > 0 ||
     filters.days.size > 0 ||
     filters.price ||
+    filters.sort ||
     (filters.search && filters.search.trim() !== '');
 
   const statusText = document.createElement('div');
@@ -1257,10 +1414,12 @@ function maybeShowReset() {
       filters.suburbs.clear();
       filters.days.clear();
       filters.price = null;
+      filters.sort = null;
       filters.search = '';
       const searchInput = document.getElementById('searchInput');
       if (searchInput) searchInput.value = '';
       renderFilters();
+      sortVenues();
       filterVenues();
       maybeShowReset();
     });
