@@ -1,7 +1,6 @@
 # Contributing
 
-This project is in an early exploratory phase. The repository is public to satisfy GitHub's open repository requirement, but we are not actively seeking external contributions.
+This project is in early exploration. External pull requests are not being accepted. Please open an issue to share ideas.
 
-If you spot an issue or have suggestions, please open an issue for discussion. Pull requests may be reviewed at the maintainers' discretion.
+Maintainers should follow AGENTS.md for style, commits, and testing.
 
-Maintainers should follow the guidelines in `AGENTS.md` for style, commit messages, and testing.

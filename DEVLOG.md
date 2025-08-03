@@ -1,6 +1,7 @@
 # Dev Log
 
-Document project decisions, major changes, and open questions.
+Track notable decisions here.
 
 ## 2025-08-03
-- Initialized repository documentation: added `AGENTS.md`, `CONTRIBUTING.md`, `DEVLOG.md`, and `docs/README.md`.
+- Added initial docs.
+

@@ -1,10 +1,4 @@
-# Project Documentation
+# Docs
 
-Use this folder to store design notes, specifications, and architecture decisions.
+Placeholder for design and architecture notes. Add files here as the project grows.
 
-Topics to cover:
-- High-level architecture or component diagrams
-- Data model explanations
-- UI/UX design guidelines
-
-Please add additional documents in this folder as needed.
