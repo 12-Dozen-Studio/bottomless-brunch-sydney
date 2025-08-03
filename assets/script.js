@@ -30,6 +30,16 @@ const cuisineIconMap = {
   'Australian': 'images/filterIcons/Austrlian.png'
 };
 
+// Inline SVG icons for pills
+const chevronSvg =
+  '<svg aria-hidden="true" class="inline w-2 h-2 ml-1 align-middle" viewBox="0 0 10 6" fill="currentColor"><path d="M0 0l5 6 5-6H0z"/></svg>';
+const sortIconSvg =
+  '<svg aria-hidden="true" class="inline w-3 h-3 mr-1 align-middle" viewBox="0 0 12 12" fill="currentColor"><path d="M6 0l3 3H3l3-3z"/><path d="M6 12l-3-3h6l-3 3z"/></svg>';
+
+function withChevron(label) {
+  return `${label}${chevronSvg}`;
+}
+
 // Wait for DOM content to boot
 document.addEventListener('DOMContentLoaded', init);
 
@@ -166,15 +176,14 @@ document.addEventListener('DOMContentLoaded', () => {
     priceBtn.id = 'priceFilterBtn';
     priceBtn.setAttribute('aria-haspopup', 'dialog');
     priceBtn.setAttribute('aria-expanded', 'false');
-    priceBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 focus:outline-none';
-    let priceActive = !!filters.price;
+    priceBtn.className = 'pill-btn bg-gray-100 border-gray-200 text-gray-700 focus:outline-none';
+    const priceActive = !!filters.price;
+    const priceLabel = priceActive ? filters.price : 'Price';
+    priceBtn.innerHTML = withChevron(priceLabel);
     if (priceActive) {
-      priceBtn.classList.remove('bg-[#363636]', 'text-white', 'border-gray-200', 'text-gray-700');
-      priceBtn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border', 'border-red-300');
-      priceBtn.textContent = filters.price;
+      priceBtn.classList.add('text-red-600', 'font-semibold', 'border-red-300');
     } else {
       priceBtn.classList.remove('text-red-600', 'font-semibold', 'border-red-300');
-      priceBtn.textContent = 'Price';
     }
     priceBtn.addEventListener('click', () => {
       renderPricePanel();
@@ -188,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
     suburbBtn.id = 'suburbFilterBtn';
     suburbBtn.setAttribute('aria-haspopup', 'dialog');
     suburbBtn.setAttribute('aria-expanded', 'false');
-    suburbBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 focus:outline-none';
+    suburbBtn.className = 'pill-btn bg-gray-100 border-gray-200 text-gray-700 focus:outline-none';
     let activeGroupCount = 0;
     if (filters.suburbs && filters.suburbs.size > 0 && suburbGroupsWithOthers) {
       activeGroupCount = Object.entries(suburbGroupsWithOthers).reduce((count, [group, suburbs]) => {
@@ -197,12 +206,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 0);
     }
     const suburbActive = activeGroupCount > 0;
+    const suburbLabel = suburbActive ? `Suburb (${activeGroupCount})` : 'Suburb';
+    suburbBtn.innerHTML = withChevron(suburbLabel);
     if (suburbActive) {
-      suburbBtn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border-red-300');
-      suburbBtn.textContent = `Suburb (${activeGroupCount})`;
+      suburbBtn.classList.add('text-red-600', 'font-semibold', 'border-red-300');
     } else {
       suburbBtn.classList.remove('text-red-600', 'font-semibold', 'border-red-300');
-      suburbBtn.textContent = 'Suburb';
     }
     suburbBtn.addEventListener('click', () => {
       renderSuburbPanel();
@@ -216,15 +225,15 @@ document.addEventListener('DOMContentLoaded', () => {
     dayBtn.id = 'dayFilterBtn';
     dayBtn.setAttribute('aria-haspopup', 'dialog');
     dayBtn.setAttribute('aria-expanded', 'false');
-    dayBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 focus:outline-none';
+    dayBtn.className = 'pill-btn bg-gray-100 border-gray-200 text-gray-700 focus:outline-none';
     const dayCount = filters.days && filters.days.size > 0 ? filters.days.size : 0;
     const dayActive = dayCount > 0;
+    const dayLabel = dayActive ? `Day (${dayCount})` : 'Day';
+    dayBtn.innerHTML = withChevron(dayLabel);
     if (dayActive) {
-      dayBtn.classList.add('bg-gray-100', 'text-red-600', 'font-semibold', 'border-red-300');
-      dayBtn.textContent = `Day (${dayCount})`;
+      dayBtn.classList.add('text-red-600', 'font-semibold', 'border-red-300');
     } else {
       dayBtn.classList.remove('text-red-600', 'font-semibold', 'border-red-300');
-      dayBtn.textContent = 'Day';
     }
     dayBtn.addEventListener('click', () => {
       renderAvailableDayPanel();
@@ -240,12 +249,14 @@ document.addEventListener('DOMContentLoaded', () => {
     sortBtn.id = 'sortBtn';
     sortBtn.setAttribute('aria-haspopup', 'dialog');
     sortBtn.setAttribute('aria-expanded', 'false');
-    sortBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 ml-auto focus:outline-none';
+    sortBtn.className = 'pill-btn bg-gray-100 border-gray-200 text-gray-700 ml-auto focus:outline-none';
     const sortActive = currentSort !== 'az';
+    sortBtn.innerHTML = getSortPillText();
     if (sortActive) {
       sortBtn.classList.add('text-red-600', 'font-semibold', 'border-red-300');
+    } else {
+      sortBtn.classList.remove('text-red-600', 'font-semibold', 'border-red-300');
     }
-    sortBtn.textContent = getSortPillText();
     sortBtn.addEventListener('click', () => {
       renderSortPanel();
       sortBtn.setAttribute('aria-expanded', 'true');
@@ -255,18 +266,27 @@ document.addEventListener('DOMContentLoaded', () => {
 }
 
 function getSortPillText() {
+  if (currentSort === 'az') {
+    return withChevron('Sort');
+  }
+  let label = '';
   switch (currentSort) {
     case 'za':
-      return 'Sort: Z–A';
+      label = 'Z–A';
+      break;
     case 'priceAsc':
-      return 'Sort: Price ↑';
+      label = 'Price ↑';
+      break;
     case 'priceDesc':
-      return 'Sort: Price ↓';
+      label = 'Price ↓';
+      break;
     case 'suburb':
-      return 'Sort: Suburb';
+      label = 'Suburb';
+      break; // future option
     default:
-      return 'Sort';
+      label = '';
   }
+  return `${sortIconSvg}Sort: ${label}`;
 }
 
 
@@ -1394,14 +1414,17 @@ function renderSortPanel() {
       </button>
     </div>
     <div class="flex-1 overflow-y-auto px-6" id="sortOptionsWrap"></div>
+    <div class="p-4 border-t">
+      <button type="button" id="resetSortBtn" class="w-full px-4 py-2 rounded-full border border-gray-300 text-gray-600 bg-gray-50">Reset Sort</button>
+    </div>
   `;
   const wrap = panel.querySelector('#sortOptionsWrap');
   const options = [
-    { value: 'az', label: 'A–Z' },
+    { value: 'az', label: 'A–Z (Default)' },
     { value: 'za', label: 'Z–A' },
     { value: 'priceAsc', label: 'Price (Low → High)' },
     { value: 'priceDesc', label: 'Price (High → Low)' },
-    { value: 'suburb', label: 'Suburb (A–Z)' }
+    // { value: 'suburb', label: 'Suburb (A–Z)' } // Temporarily removed
   ];
   options.forEach((opt, idx) => {
     const rowDiv = document.createElement('div');
@@ -1411,11 +1434,20 @@ function renderSortPanel() {
       renderFilters();
       sortVenueCards();
       filterVenues();
+      maybeShowReset();
       closeSortPanel();
     });
     input.name = 'sortOption';
     rowDiv.appendChild(wrapper);
     wrap.appendChild(rowDiv);
+  });
+  panel.querySelector('#resetSortBtn').addEventListener('click', () => {
+    currentSort = 'az';
+    renderFilters();
+    sortVenueCards();
+    filterVenues();
+    maybeShowReset();
+    closeSortPanel();
   });
   panel.querySelector('#closeSortPanelBtn').addEventListener('click', closeSortPanel);
   panel.addEventListener('keydown', e => {
@@ -1473,6 +1505,7 @@ function maybeShowReset() {
     filters.suburbs.size > 0 ||
     filters.days.size > 0 ||
     filters.price ||
+    currentSort !== 'az' ||
     (filters.search && filters.search.trim() !== '');
 
   const statusText = document.createElement('div');
@@ -1496,9 +1529,11 @@ function maybeShowReset() {
       filters.days.clear();
       filters.price = null;
       filters.search = '';
+      currentSort = 'az';
       const searchInput = document.getElementById('searchInput');
       if (searchInput) searchInput.value = '';
       renderFilters();
+      sortVenueCards();
       filterVenues();
       maybeShowReset();
     });
