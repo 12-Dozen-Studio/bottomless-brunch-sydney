@@ -43,6 +43,7 @@ async function init() {
   renderVenues(venuesData); // pre-render all venue cards
   initSearch();
   filterVenues(); // apply initial filters
+  maybeShowReset();
 }
 
 function computeSuburbGroupsWithOthers() {
@@ -82,9 +83,6 @@ function renderFilters() {
     'Mediterranean',
     'Asian'
   ];
-  const filterRow = document.getElementById('filterRow');
-  // Remove filterRow logic if not present (wrapper split)
-  // filterRow may not exist anymore, so skip className assignment
 
   // Cuisine row (scrollable) - now rendered into #cuisineFilters
   const cuisineScroll = document.getElementById('cuisineFilters');
@@ -241,50 +239,6 @@ document.addEventListener('DOMContentLoaded', () => {
     sortBtn.disabled = true;
     pillFilters.appendChild(sortBtn);
   }
-
-  // Remove existing filter status row if present
-  const existingStatusRow = document.getElementById('filterStatusRow');
-  if (existingStatusRow) existingStatusRow.remove();
-
-  // New persistent filter status row
-  const filterStatusRow = document.createElement('div');
-  filterStatusRow.id = 'filterStatusRow';
-  filterStatusRow.className = 'flex items-center justify-between px-4 py-1 min-h-[36px] bg-white border-b border-gray-100 text-sm';
-
-  // Venue count text
-  const statusText = document.createElement('div');
-  const visibleCount = venueCards.filter(({ el }) => !el.classList.contains('hidden')).length;
-  const hasActive = filters.cuisines.size > 0 || filters.suburbs.size > 0 || filters.days.size > 0 || filters.price || (filters.search && filters.search.trim() !== '');
-  statusText.textContent = hasActive ? `${visibleCount} venues matched` : 'Showing all venues';
-  statusText.className = 'text-gray-700';
-
-  filterStatusRow.appendChild(statusText);
-
-  if (hasActive) {
-    const resetBtn = document.createElement('button');
-    resetBtn.textContent = 'Reset';
-    resetBtn.className = 'text-red-500 border border-red-200 px-3 py-1 rounded-full text-sm';
-    resetBtn.addEventListener('click', () => {
-      filters.cuisines.clear();
-      filters.suburbs.clear();
-      filters.days.clear();
-      filters.price = null;
-      filters.search = '';
-      document.getElementById('searchInput').value = '';
-      renderFilters();
-      filterVenues();
-    });
-    filterStatusRow.appendChild(resetBtn);
-  } else {
-    filterStatusRow.classList.add('justify-center');
-  }
-
-  // Only append filterStatusRow if filterRow exists
-  if (filterRow) {
-    filterRow.appendChild(filterStatusRow);
-    // Set filterRow sticky etc classes (outer)
-    filterRow.classList.add('bg-white', 'border-b', 'border-gray-200', 'sticky', 'top-[72px]', 'z-10');
-  }
 }
 
 
@@ -296,6 +250,7 @@ function initSearch() {
   input.addEventListener('input', e => {
     filters.search = e.target.value.toLowerCase();
     filterVenues();
+    maybeShowReset();
   });
 }
 
@@ -491,6 +446,7 @@ function renderSuburbPanel() {
     filters.suburbs.clear();
     renderFilters();
     filterVenues(); // Update results immediately
+    maybeShowReset();
     closeSuburbPanel(); // Close the suburb panel
   });
   // Event: apply
@@ -599,7 +555,7 @@ function renderVenueCard(venue, index) {
   const card = document.createElement('div');
   // Set consistent card height and flex layout
   card.className =
-    'relative bg-white rounded-lg overflow-hidden border border-gray-200 flex cursor-pointer focus:outline-none h-[160px]';
+    'relative mb-4 bg-white rounded-lg overflow-hidden border border-gray-200 flex cursor-pointer focus:outline-none h-[160px]';
   card.tabIndex = 0;
   card.setAttribute('role', 'button');
   card.setAttribute('aria-label', `${venue.name} details`);
@@ -1058,6 +1014,7 @@ function renderAvailableDayPanel() {
     filters.days.clear();
     renderFilters();
     filterVenues(); // Update results immediately
+    maybeShowReset();
     closeAvailableDayPanel(); // Close the day panel
   });
   // Event: apply
@@ -1255,4 +1212,58 @@ function closePricePanel() {
       btn.focus();
     }
   }, 300);
+}
+
+function maybeShowReset() {
+  const venueList = document.getElementById('venueList');
+  if (!venueList) return;
+
+  let filterStatusRow = document.getElementById('filterStatusRow');
+  if (!filterStatusRow) {
+    filterStatusRow = document.createElement('div');
+    filterStatusRow.id = 'filterStatusRow';
+    venueList.insertAdjacentElement('beforebegin', filterStatusRow);
+  }
+
+  // Base classes for the status row
+  filterStatusRow.className = 'flex items-center px-4 h-9 bg-white border-b border-gray-100 text-sm';
+  filterStatusRow.innerHTML = '';
+
+  const visibleCount = venueCards.filter(({ el }) => !el.classList.contains('hidden')).length;
+  const hasActive =
+    filters.cuisines.size > 0 ||
+    filters.suburbs.size > 0 ||
+    filters.days.size > 0 ||
+    filters.price ||
+    (filters.search && filters.search.trim() !== '');
+
+  const statusText = document.createElement('div');
+  if (hasActive) {
+    statusText.className = 'text-gray-700';
+    statusText.textContent = `${visibleCount} venues matched`;
+  } else {
+    statusText.className = 'text-red-500 font-semibold';
+    statusText.textContent = 'Bottomless Brunch Venues in Sydney';
+  }
+  filterStatusRow.appendChild(statusText);
+
+  if (hasActive) {
+    filterStatusRow.classList.add('justify-between');
+    const resetBtn = document.createElement('button');
+    resetBtn.textContent = 'Reset';
+    resetBtn.className = 'text-red-500 border border-red-200 px-3 py-1 rounded-full text-sm';
+    resetBtn.addEventListener('click', () => {
+      filters.cuisines.clear();
+      filters.suburbs.clear();
+      filters.days.clear();
+      filters.price = null;
+      filters.search = '';
+      const searchInput = document.getElementById('searchInput');
+      if (searchInput) searchInput.value = '';
+      renderFilters();
+      filterVenues();
+      maybeShowReset();
+    });
+    filterStatusRow.appendChild(resetBtn);
+  }
 }
