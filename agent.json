@@ -1,8 +1,11 @@
 {
   "name": "BrunchUIAgent",
   "description": "Codex assistant for UI logic, filter panels, and sort behavior in the bottomless brunch Sydney web app.",
-  "goal": [
-    "Ensure consistent interaction behavior across Suburb, Day, and Sort filter panels",
+  "version": "1.0.0",
+  "maintainer": "TBD",
+  "updated": "2025-08-03",
+  "goals": [
+    "Ensure consistent interaction behavior across suburb, day, and sort filter panels",
     "Fix visual alignment of checkboxes and selection icons",
     "Enable whole-row clickability with grey highlight feedback",
     "Support reusable class and layout structure for all panels",
@@ -10,7 +13,10 @@
   ],
   "file_patterns": [
     "index.html",
-    "assets/script.js",
-    "assets/styles.css"
+    "assets/script.js"
+  ],
+  "exclude_patterns": [
+    "images/**",
+    "ui/**"
   ]
 }
