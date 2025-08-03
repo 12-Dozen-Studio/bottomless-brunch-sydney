@@ -349,6 +349,19 @@ function renderFilterCheckboxRow(labelText, description = '', isChecked = false,
   const label = document.createElement('label');
   label.setAttribute('for', inputId);
   label.className = 'flex w-full cursor-pointer items-start gap-3 p-3 rounded-lg transition-colors hover:bg-gray-100 active:bg-gray-100';
+
+  let descriptionHTML = '';
+  if (Array.isArray(description) && description.length > 0) {
+    descriptionHTML = `<div class="flex flex-wrap items-center gap-1"><span class="font-semibold text-sm text-gray-800 mr-1">${labelText}</span>` +
+      description.map(s => `<span class="text-xs text-gray-600 bg-gray-100 rounded-full px-2 py-0.5">${s}</span>`).join('') +
+      '</div>';
+  } else {
+    descriptionHTML = `
+      <span class="font-semibold text-sm text-gray-800">${labelText}</span>
+      ${description ? `<span class="text-xs text-gray-600 font-light">${description}</span>` : ''}
+    `;
+  }
+
   label.innerHTML = `
     <div class="checkbox-box flex items-center justify-center w-5 h-5 rounded border border-gray-300 bg-white">
       <svg class="check-icon h-3.5 w-3.5 text-white hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" stroke="currentColor" stroke-width="1">
@@ -357,8 +370,7 @@ function renderFilterCheckboxRow(labelText, description = '', isChecked = false,
       <span class="dash-icon w-2 h-0.5 bg-white hidden"></span>
     </div>
     <div class="flex flex-col flex-1">
-      <span class="font-semibold text-sm text-gray-800">${labelText}</span>
-      ${description ? `<span class="text-xs text-gray-600 font-light">${description}</span>` : ''}
+      ${descriptionHTML}
     </div>
   `;
   wrapper.appendChild(label);
@@ -410,7 +422,7 @@ function renderSuburbPanelContent(panelContent) {
     const allChecked = suburbs.length > 0 && suburbs.every(s => filters.suburbs.has(s));
     const someChecked = suburbs.some(s => filters.suburbs.has(s));
 
-    const { wrapper, input } = renderFilterCheckboxRow(group, suburbs.join(', '), allChecked, false, el => {
+    const { wrapper, input } = renderFilterCheckboxRow(group, suburbs, allChecked, false, el => {
       if (el.checked) {
         suburbs.forEach(s => filters.suburbs.add(s));
       } else {
@@ -984,7 +996,9 @@ function renderAvailableDayPanelContent(panelContent) {
     'Saturday',
     'Sunday'
   ];
-  daysOfWeek.forEach(day => {
+  daysOfWeek.forEach((day, idx) => {
+    const rowDiv = document.createElement('div');
+    rowDiv.className = 'py-3' + (idx < daysOfWeek.length - 1 ? ' border-b border-gray-200' : '');
     const { wrapper, input } = renderFilterCheckboxRow(day, '', filters.days.has(day), false, el => {
       if (el.checked) {
         filters.days.add(day);
@@ -994,7 +1008,8 @@ function renderAvailableDayPanelContent(panelContent) {
     });
     input.classList.add('day-checkbox');
     input.value = day;
-    panelContent.appendChild(wrapper);
+    rowDiv.appendChild(wrapper);
+    panelContent.appendChild(rowDiv);
   });
 }
 
