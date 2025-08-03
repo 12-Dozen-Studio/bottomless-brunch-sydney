@@ -1,6 +1,11 @@
-# AGENTS Instructions
+# Agent Guidelines
 
-These guidelines apply to the entire repository.
+This repository aims to get the Bottomless Brunch Sydney web app ready for release. Agents assist with any task that helps refine the app, including:
+
+- Fast prototyping and copywriting
+- Data corrections and spot-checks
+- UI/UX feedback
+- Code reviews and polish
 
 ## Code Style
 - Use two spaces for indentation.

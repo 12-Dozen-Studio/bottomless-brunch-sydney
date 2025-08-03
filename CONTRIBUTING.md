@@ -1,22 +1,7 @@
 # Contributing
 
-Thank you for considering a contribution!
+This project is in an early exploratory phase. The repository is public to satisfy GitHub's open repository requirement, but we are not actively seeking external contributions.
 
-## Branches
-- Use `main` for releases.
-- Create feature branches from `main` using the pattern `feature/<description>`.
+If you spot an issue or have suggestions, please open an issue for discussion. Pull requests may be reviewed at the maintainers' discretion.
 
-## Commit Guidelines
-- Write clear, imperative commit messages.
-- Reference issue numbers when applicable.
-
-## Code Style
-- Follow the rules in `AGENTS.md`.
-
-## Development
-- Use Node.js 18 or later.
-- Run `node --check assets/script.js` before pushing.
-
-## Pull Requests
-- Ensure your branch is up to date with `main` before submitting a PR.
-- Provide a concise summary and testing notes in the PR description.
+Maintainers should follow the guidelines in `AGENTS.md` for style, commit messages, and testing.
