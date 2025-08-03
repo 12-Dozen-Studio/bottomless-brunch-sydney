@@ -154,13 +154,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const pillFilters = document.getElementById('pillFilters');
   if (pillFilters) {
     pillFilters.innerHTML = '';
+    pillFilters.classList.add('flex-nowrap');
+
+    // Group first three pills so Sort can stay right-aligned
+    const group = document.createElement('div');
+    group.className = 'flex gap-1 flex-nowrap';
+
     // Price
     const priceBtn = document.createElement('button');
     priceBtn.type = 'button';
     priceBtn.id = 'priceFilterBtn';
     priceBtn.setAttribute('aria-haspopup', 'dialog');
     priceBtn.setAttribute('aria-expanded', 'false');
-    priceBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 flex-shrink-0 focus:outline-none';
+    priceBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 focus:outline-none';
     let priceActive = !!filters.price;
     if (priceActive) {
       priceBtn.classList.remove('bg-[#363636]', 'text-white', 'border-gray-200', 'text-gray-700');
@@ -174,14 +180,15 @@ document.addEventListener('DOMContentLoaded', () => {
       renderPricePanel();
       priceBtn.setAttribute('aria-expanded', 'true');
     });
-    pillFilters.appendChild(priceBtn);
+    group.appendChild(priceBtn);
+
     // Suburb
     const suburbBtn = document.createElement('button');
     suburbBtn.type = 'button';
     suburbBtn.id = 'suburbFilterBtn';
     suburbBtn.setAttribute('aria-haspopup', 'dialog');
     suburbBtn.setAttribute('aria-expanded', 'false');
-    suburbBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 flex-shrink-0 focus:outline-none';
+    suburbBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 focus:outline-none';
     let activeGroupCount = 0;
     if (filters.suburbs && filters.suburbs.size > 0 && suburbGroupsWithOthers) {
       activeGroupCount = Object.entries(suburbGroupsWithOthers).reduce((count, [group, suburbs]) => {
@@ -201,14 +208,15 @@ document.addEventListener('DOMContentLoaded', () => {
       renderSuburbPanel();
       suburbBtn.setAttribute('aria-expanded', 'true');
     });
-    pillFilters.appendChild(suburbBtn);
+    group.appendChild(suburbBtn);
+
     // Available Day
     const dayBtn = document.createElement('button');
     dayBtn.type = 'button';
     dayBtn.id = 'dayFilterBtn';
     dayBtn.setAttribute('aria-haspopup', 'dialog');
     dayBtn.setAttribute('aria-expanded', 'false');
-    dayBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 flex-shrink-0 focus:outline-none';
+    dayBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 focus:outline-none';
     const dayCount = filters.days && filters.days.size > 0 ? filters.days.size : 0;
     const dayActive = dayCount > 0;
     if (dayActive) {
@@ -222,10 +230,13 @@ document.addEventListener('DOMContentLoaded', () => {
       renderAvailableDayPanel();
       dayBtn.setAttribute('aria-expanded', 'true');
     });
-    pillFilters.appendChild(dayBtn);
+    group.appendChild(dayBtn);
+
+    pillFilters.appendChild(group);
+
     // Sort
     const sortBtn = document.createElement('button');
-    sortBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 flex-shrink-0 focus:outline-none';
+    sortBtn.className = 'px-3 py-1 bg-gray-100 rounded-full border border-gray-200 text-sm text-gray-700 ml-auto focus:outline-none';
     sortBtn.textContent = 'Sort';
     sortBtn.disabled = true;
     pillFilters.appendChild(sortBtn);
