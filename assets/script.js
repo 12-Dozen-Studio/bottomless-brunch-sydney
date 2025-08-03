@@ -1226,7 +1226,7 @@ function maybeShowReset() {
   }
 
   // Base classes for the status row
-  filterStatusRow.className = 'flex items-center px-4 py-1 min-h-[36px] bg-white border-b border-gray-100 text-sm';
+  filterStatusRow.className = 'flex items-center px-4 h-9 bg-white border-b border-gray-100 text-sm';
   filterStatusRow.innerHTML = '';
 
   const visibleCount = venueCards.filter(({ el }) => !el.classList.contains('hidden')).length;
@@ -1238,10 +1238,13 @@ function maybeShowReset() {
     (filters.search && filters.search.trim() !== '');
 
   const statusText = document.createElement('div');
-  statusText.className = 'text-gray-700';
-  statusText.textContent = hasActive
-    ? `${visibleCount} venues matched`
-    : 'Bottomless Brunch Venues in Sydney';
+  if (hasActive) {
+    statusText.className = 'text-gray-700';
+    statusText.textContent = `${visibleCount} venues matched`;
+  } else {
+    statusText.className = 'text-red-500 font-semibold';
+    statusText.textContent = 'Bottomless Brunch Venues in Sydney';
+  }
   filterStatusRow.appendChild(statusText);
 
   if (hasActive) {
@@ -1262,7 +1265,5 @@ function maybeShowReset() {
       maybeShowReset();
     });
     filterStatusRow.appendChild(resetBtn);
-  } else {
-    filterStatusRow.classList.add('justify-center');
   }
 }
